@@ -58,6 +58,10 @@ details {
       .more-indicator-verbiage, .less-indicator-verbiage {
         cursor: pointer;
       }
+
+      .more-info-icon {
+        color: $medium-gray;
+      }
     }
 
     &[open] > summary {
