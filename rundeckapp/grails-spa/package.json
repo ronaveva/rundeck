@@ -24,7 +24,7 @@
     "vue2-ace-editor": "0.0.11"
   },
   "devDependencies": {
-    "@rundeck/ui-trellis": "git+https://github.com/rundeck/ui-trellis.git#c1e5cc32565f2c91e7e902df6f2049f397824749",
+    "@rundeck/ui-trellis": "git+https://github.com/rundeck/ui-trellis.git#be607c5b466e5c289d92ad82c1f00506cad18004",
     "@types/lodash": "^4.14.117",
     "autoprefixer": "^7.1.2",
     "babel-core": "^6.22.1",
