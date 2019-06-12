@@ -6,7 +6,7 @@ import com.dtolabs.rundeck.core.jobs.JobLifeCycleEvent;
 
 import java.util.Map;
 
-public class JobLifeCycleEventImpl implements JobLifeCycleEvent {
+public class JobExecutionEvent implements JobExecutionEvent {
 
     private StepExecutionContext executionContext;
 
