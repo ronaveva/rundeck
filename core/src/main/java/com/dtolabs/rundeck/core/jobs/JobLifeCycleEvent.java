@@ -1,5 +1,7 @@
 package com.dtolabs.rundeck.core.jobs;
 
+import com.dtolabs.rundeck.core.common.Framework;
+import com.dtolabs.rundeck.core.common.IRundeckProject;
 import com.dtolabs.rundeck.core.execution.ExecutionLogger;
 import com.dtolabs.rundeck.core.execution.workflow.StepExecutionContext;
 
@@ -15,32 +17,19 @@ public interface JobLifeCycleEvent {
 
     /**
      *
-     * @return StepExecutionContext of the event.
+     * @return String project where the event occurs.
      */
-    StepExecutionContext getExecutionContext();
+    String getProjectName();
 
     /**
      *
-     * @return Map<String, String> options of the job.
+     * @return the framework.
      */
-    Map<String, String> getOptions();
+    Framework getFramework();
 
     /**
      *
-     * @return ExecutionLogger logger of the job.
+     * @return all of the rundeck project information.
      */
-    ExecutionLogger getExecutionLogger();
-
-    /**
-     *
-     * @return String user name triggering the job.
-     */
-    String getUserName();
-
-    /**
-     *
-     * @return String job execution id.
-     */
-    String getExecutionId();
-
+    IRundeckProject getRundeckProject();
 }
