@@ -44,7 +44,7 @@ class PluginApiServiceIntegrationSpec extends Specification {
 
         when:
         def pluginList = pluginApiService.listPluginsDetailed()
-
+        
         then:
         pluginList.descriptions.size() == 25
         pluginList.serviceDefaultScopes.size() == 2

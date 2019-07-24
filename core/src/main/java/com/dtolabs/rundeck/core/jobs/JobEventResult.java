@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 SimplifyOps, Inc. (http://simplifyops.com)
+ * Copyright 2019 Rundeck, Inc. (http://rundeck.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-package rundeck.services
+package com.dtolabs.rundeck.core.jobs;
 
-import grails.test.mixin.TestFor
-import spock.lang.Specification
+import com.dtolabs.rundeck.core.execution.workflow.WorkflowExecutionResult;
 
-/**
- * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
- */
-@TestFor(JobEventsService)
-class JobEventsServiceSpec extends Specification {
+public interface JobEventResult {
+    WorkflowExecutionResult getResult();
 
-    def setup() {
-    }
-
-    def cleanup() {
-    }
-
-    void "test something"() {
-    }
+    boolean isAborted();
 }

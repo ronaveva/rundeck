@@ -28,6 +28,7 @@ import com.dtolabs.rundeck.core.dispatcher.ContextView
 import com.dtolabs.rundeck.core.dispatcher.DataContextUtils
 import com.dtolabs.rundeck.core.execution.ExecutionContextImpl
 import com.dtolabs.rundeck.core.execution.ExecutionListener
+import com.dtolabs.rundeck.core.execution.JobPluginException
 import com.dtolabs.rundeck.core.execution.StepExecutionItem
 import com.dtolabs.rundeck.core.execution.WorkflowExecutionServiceThread
 import com.dtolabs.rundeck.core.execution.service.NodeExecutorResultImpl
@@ -37,6 +38,7 @@ import com.dtolabs.rundeck.core.execution.workflow.steps.node.NodeStepException
 import com.dtolabs.rundeck.core.execution.workflow.steps.node.NodeStepExecutionItem
 import com.dtolabs.rundeck.core.execution.workflow.steps.node.NodeStepExecutor
 import com.dtolabs.rundeck.core.execution.workflow.steps.node.NodeStepResult
+import com.dtolabs.rundeck.core.jobs.JobEventStatus
 import com.dtolabs.rundeck.core.logging.*
 import com.dtolabs.rundeck.core.plugins.PluginConfiguration
 import com.dtolabs.rundeck.core.utils.NodeSet
@@ -46,6 +48,7 @@ import com.dtolabs.rundeck.execution.JobExecutionItem
 import com.dtolabs.rundeck.execution.JobRefCommand
 import com.dtolabs.rundeck.execution.JobReferenceFailureReason
 import com.dtolabs.rundeck.plugins.ServiceNameConstants
+import com.dtolabs.rundeck.plugins.jobs.JobPreExecutionEventImpl
 import com.dtolabs.rundeck.plugins.logging.LogFilterPlugin
 import com.dtolabs.rundeck.plugins.scm.JobChangeEvent
 import com.dtolabs.rundeck.server.authorization.AuthConstants
@@ -68,6 +71,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.context.MessageSource
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.validation.ObjectError
 import org.springframework.web.context.request.RequestContextHolder
@@ -91,7 +95,6 @@ import java.text.SimpleDateFormat
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.regex.Pattern
-import java.util.stream.Collectors
 
 /**
  * Coordinates Command executions via Ant Project objects
@@ -126,6 +129,7 @@ class ExecutionService implements ApplicationContextAware, StepExecutor, NodeSte
     def fileUploadService
     def pluginService
     def executorService
+    def jobPluginService
 
     static final ThreadLocal<DateFormat> ISO_8601_DATE_FORMAT_WITH_MS_XXX =
         new ThreadLocal<DateFormat>() {
@@ -1162,8 +1166,11 @@ class ExecutionService implements ApplicationContextAware, StepExecutor, NodeSte
                     framework.getWorkflowExecutionService(),
                     item,
                     executioncontext,
-                    workflowLogManager
+                    workflowLogManager,
+                    jobPluginService,
+                    execution.asReference()
             )
+
             thread.start()
             log.debug("started thread")
             return [
@@ -2263,7 +2270,13 @@ class ExecutionService implements ApplicationContextAware, StepExecutor, NodeSte
         }
 
         //evaluate embedded Job options for validation
-        HashMap optparams = validateJobInputOptions(props, se, authContext)
+        HashMap optparams = validateJobInputOptions(props, se, authContext, null)
+        def result = checkBeforeJobExecution(se, optparams, props)
+        if(result?.useNewValues()){
+            //if new parameters are needed, a new validation is required
+            optparams = validateJobInputOptions(props, se, authContext, result.getOptionsValues())
+        }
+
         optparams = removeSecureOptionEntries(se, optparams)
 
         props.argString = generateJobArgline(se, optparams)
@@ -2410,10 +2423,16 @@ class ExecutionService implements ApplicationContextAware, StepExecutor, NodeSte
      * @param props
      * @param scheduledExec
      * @param authContext auth for reading storage defaults
+     * @param optionValues values modified by a job plugin
      * @return
      */
-    private HashMap validateJobInputOptions(Map props, ScheduledExecution scheduledExec, UserAndRolesAuthContext authContext) {
-        HashMap optparams = parseJobOptionInput(props, scheduledExec)
+    private HashMap validateJobInputOptions(Map props, ScheduledExecution scheduledExec, UserAndRolesAuthContext authContext, Map optionValues) {
+        HashMap optparams
+        if(!optionValues){
+            optparams = parseJobOptionInput(props, scheduledExec)
+        }else{
+            optparams = optionValues
+        }
         validateOptionValues(scheduledExec, optparams,authContext)
         return optparams
     }
@@ -3579,7 +3598,9 @@ class ExecutionService implements ApplicationContextAware, StepExecutor, NodeSte
                     wservice,
                     newExecItem,
                     newContext,
-                    null
+                    null,
+                    jobPluginService,
+                    exec.asReference()
             )
 
             thread.start()
@@ -3924,5 +3945,15 @@ class ExecutionService implements ApplicationContextAware, StepExecutor, NodeSte
         list = list + fwPlugins
 
         return list
+    }
+
+    def checkBeforeJobExecution(scheduledExecution, optparams, props){
+        INodeSet nodeSet = frameworkService?.filterNodeSet(ExecutionService.filtersAsNodeSet(scheduledExecution), props.project)
+        JobPreExecutionEventImpl event = new JobPreExecutionEventImpl(props.project, props.user, scheduledExecution.toMap(), optparams, nodeSet)
+        try{
+            return jobPluginService.beforeJobExecution(event)
+        }catch(JobPluginException jpe){
+            throw new ExecutionServiceValidationException(jpe.message, optparams, null)
+        }
     }
 }
