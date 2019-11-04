@@ -36,7 +36,7 @@ class ScheduledExecution extends ExecutionContext implements EmbeddedJsonData {
     static final String RUNBOOK_MARKER='---'
     Long id
     SortedSet<Option> options
-    static hasMany = [executions:Execution,options:Option,notifications:Notification]
+    static hasMany = [executions:Execution,options:Option,notifications:Notification,scheduleDefinitions:ScheduleDef]
 
     String groupPath
     String userRoleList
@@ -681,7 +681,7 @@ class ScheduledExecution extends ExecutionContext implements EmbeddedJsonData {
     }
 
     def boolean shouldScheduleExecution() {
-        return scheduled && hasExecutionEnabled() && hasScheduleEnabled()
+        return (scheduled || (scheduleDefinitions && !scheduleDefinitions.isEmpty()))&& hasExecutionEnabled() && hasScheduleEnabled()
     }
 
     def boolean hasExecutionEnabled() {
@@ -1200,5 +1200,20 @@ class ScheduledExecution extends ExecutionContext implements EmbeddedJsonData {
     SortedSet<JobOption> jobOptionsSet() {
         new TreeSet<>(options.collect{it.toJobOption()})
     }
+
+    /**
+     * Get the quartz job names and the cron expression associated to it
+     * @return Map
+     */
+    Map getJobScheduleDefinitionMap(){
+        def scheduledJobsCrons = [:]
+        if(scheduleDefinitions){
+            scheduleDefinitions.each {it ->
+                scheduledJobsCrons << [([id,jobName,it.id].join(":")):it.generateCrontabExression()]
+            }
+        }
+        return scheduledJobsCrons
+    }
+
 }
 
