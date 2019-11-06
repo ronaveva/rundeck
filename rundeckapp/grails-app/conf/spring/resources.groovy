@@ -71,6 +71,7 @@ import org.springframework.security.web.authentication.session.SessionFixationPr
 import org.springframework.security.web.jaasapi.JaasApiIntegrationFilter
 import org.springframework.security.web.session.ConcurrentSessionFilter
 import rundeck.services.DirectNodeExecutionService
+import rundeck.services.LocalScheduleCalendarManager
 import rundeck.services.PasswordFieldsService
 import rundeck.services.QuartzJobScheduleManager
 import rundeck.services.audit.AuditEventsService
@@ -196,6 +197,9 @@ beans={
 
     rundeckJobScheduleManager(QuartzJobScheduleManager){
         quartzScheduler=ref('quartzScheduler')
+    }
+
+    rundeckJobScheduleCalendarManager(LocalScheduleCalendarManager){
     }
 
     //cache for provider loaders bound to a file
