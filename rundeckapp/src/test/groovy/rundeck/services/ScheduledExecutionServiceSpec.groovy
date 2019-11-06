@@ -193,6 +193,9 @@ class ScheduledExecutionServiceSpec extends Specification {
             }
             scheduleRemoteJob(_)>>false
         }
+        service.jobSchedulerCalendarService=Mock(JobSchedulerCalendarService){
+            isCalendarEnable()>>false
+        }
         def job = new ScheduledExecution(
                 createJobParams(
                         scheduled: hasSchedule,
@@ -2537,6 +2540,9 @@ class ScheduledExecutionServiceSpec extends Specification {
         service.frameworkService = Mock(FrameworkService) {
             getFrameworkProject(_) >> projectMock
         }
+        service.jobSchedulerCalendarService=Mock(JobSchedulerCalendarService){
+            isCalendarEnable()>>false
+        }
         when:
         def result = service.rescheduleJobs(null)
 
@@ -2847,6 +2853,9 @@ class ScheduledExecutionServiceSpec extends Specification {
         service.frameworkService = Mock(FrameworkService) {
             getRundeckBase() >> ''
             getFrameworkProject('AProject') >> projectMock
+        }
+        service.jobSchedulerCalendarService=Mock(JobSchedulerCalendarService){
+            isCalendarEnable()>>false
         }
         def job = new ScheduledExecution(
                 createJobParams(

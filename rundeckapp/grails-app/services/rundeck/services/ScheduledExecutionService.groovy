@@ -152,6 +152,7 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
     JobLifecyclePluginService jobLifecyclePluginService
     ExecutionLifecyclePluginService executionLifecyclePluginService
     def schedulerService
+    JobSchedulerCalendarService jobSchedulerCalendarService
 
     @Override
     void afterPropertiesSet() throws Exception {
@@ -679,12 +680,12 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
     }
 
     /**
-     * Reschedule all scheduled jobs which match the given serverUUID, or all jobs if it is null.
+     * list scheduled jobs which match the given serverUUID, or all jobs if it is null.
      * @param serverUUID
+     * @param project
      * @return
      */
-    def rescheduleJobs(String serverUUID = null, String project = null) {
-        Date now = new Date()
+    def listScheduledJobs(String serverUUID = null, String project = null){
         def results = ScheduledExecution.scheduledJobs()
         if (serverUUID) {
             results = results.withServerUUID(serverUUID)
@@ -692,10 +693,21 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         if(project) {
             results = results.withProject(project)
         }
+        results.list()
+    }
+
+
+    /**
+     * Reschedule all scheduled jobs which match the given serverUUID, or all jobs if it is null.
+     * @param serverUUID
+     * @return
+     */
+    def rescheduleJobs(String serverUUID = null, String project = null) {
+        Date now = new Date()
         def succeededJobs = []
         def failedJobs = []
         // Reschedule jobs on fixed schedules
-        def scheduledList = results.list()
+        def scheduledList = listScheduledJobs(serverUUID, project)
         scheduledList.each { ScheduledExecution se ->
             try {
                 def nexttime = null
@@ -711,7 +723,7 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         }
 
         // Reschedule any executions which were scheduled ad hoc
-        results = Execution.isScheduledAdHoc()
+        def results = Execution.isScheduledAdHoc()
         if (serverUUID) {
             results = results.withServerNodeUUID(serverUUID)
         }
@@ -1114,8 +1126,18 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
             }
         }
 
+        String calendarName = null
+
+        if(jobSchedulerCalendarService.isCalendarEnable()){
+            Map calendarsMap = jobSchedulerCalendarService.getCalendar(se.project, se.uuid)
+            if(calendarsMap){
+                calendarName = calendarsMap.name
+                this.registerCalendar(calendarName,calendarsMap.rundeckCalendar , false )
+            }
+        }
+
         def jobDetail = schedulerService.createJobDetail(se)
-        def trigger = schedulerService.createTrigger(se)
+
         jobDetail.getJobDataMap().put("bySchedule", true)
         def Date nextTime
         if(oldJobName && oldGroupName){
@@ -1125,11 +1147,11 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         //TODO: check for schedule def list, return the closest
         if ( hasJobScheduled(se) ) {
             log.info("rescheduling existing job in project ${se.project} ${se.extid}: " + se.generateJobScheduledName())
-            def result = schedulerService.handleScheduleDefinitions(se, true)
+            def result = schedulerService.handleScheduleDefinitions(se, true, calendarName)
             nextTime = result? result.nextTime: null
         } else {
             log.info("scheduling new job in project ${se.project} ${se.extid}: " + se.generateJobScheduledName())
-            def result = schedulerService.handleScheduleDefinitions(se, false)
+            def result = schedulerService.handleScheduleDefinitions(se, false, calendarName)
             nextTime = result? result.nextTime: null
         }
 
@@ -4353,5 +4375,16 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
     Date nextExecutionTime(ScheduledExecution se, boolean require=false) {
         schedulerService.nextExecutionTime(se, require)
     }
+
+    def registerCalendar(String calendarName, Calendar calendar, boolean force){
+        if(force){
+            quartzScheduler.addCalendar(calendarName, calendar, true, false)
+        }else{
+            if(!quartzScheduler.getCalendar(calendarName)){
+                quartzScheduler.addCalendar(calendarName, calendar, false, false)
+            }
+        }
+    }
+
 
 }
