@@ -27,6 +27,7 @@ class User {
     String email
     Date dateCreated
     Date lastUpdated
+    Date lastAction
     
     static mapping = {
         table "rduser"
@@ -53,5 +54,6 @@ class User {
         lastLogout(nullable:true)
         lastSessionId(nullable:true)
         lastLoggedHostName(nullable:true)
+        lastAction(nullable:true)
     }
 }

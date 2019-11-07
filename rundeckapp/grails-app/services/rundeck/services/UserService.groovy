@@ -77,6 +77,18 @@ class UserService {
         return user
     }
 
+    def registerUserAction(String userName){
+        User user = User.findByLogin(userName)
+        if(!user){
+            return
+        }
+        user.lastAction = new Date()
+        if(!user.save(flush:true)){
+            System.err.println("unable to save user: ${u}, ${u.errors.allErrors.join(',')}");
+        }
+        return user
+    }
+
     def registerLogout(String login){
         User user = User.findByLogin(login)
         if(!user){
@@ -184,7 +196,7 @@ class UserService {
     def getLoginStatus(User user){
         def status = LogginStatus.NOTLOGGED.value
         if(user){
-            Date lastDate = user.getLastLogin()
+            Date lastDate = getLastDate(user.getLastLogin(), user.getLastAction())
             if(lastDate != null){
                 int minutes = configurationService.getInteger(SESSION_ABANDONDED_MINUTES, DEFAULT_TIMEOUT)
                 Calendar calendar = Calendar.getInstance()
@@ -293,4 +305,18 @@ class UserService {
     boolean validateUserExists(String username) {
         User.findByLogin(username) != null
     }
+
+    def getLastDate(Date firstDt, Date secondDt){
+        if(firstDt == null){
+            return secondDt
+        }else if(secondDt == null){
+            return firstDt
+        }
+        if(firstDt.after(secondDt)){
+            return firstDt
+        }else{
+            return secondDt
+        }
+    }
+
 }
