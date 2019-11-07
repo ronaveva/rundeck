@@ -250,12 +250,11 @@
                     headers: {'x-rundeck-ajax': true},
                     url: `/projectSchedules/persistSchedule`,
                     params: {
-                        project: window._rundeck.projectName,
+                        project: window._rundeck.projectName
                     },
                     data: {
                         schedule: this.scheduleToPersist
                     },
-                    async: false,
                     withCredentials: true
                 }).then((response) => {
                     if(response.data.errors != null){
@@ -277,7 +276,6 @@
                         crontabString: this.scheduleToPersist.cronString
                     },
                     evalScripts:true,
-                    async: false,
                     withCredentials: true
                 }).then((response) => {
                     this.errors = response.request.response

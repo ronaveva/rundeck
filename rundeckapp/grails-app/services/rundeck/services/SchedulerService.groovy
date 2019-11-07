@@ -1,6 +1,7 @@
 package rundeck.services
 
 import grails.gorm.transactions.Transactional
+import org.quartz.Calendar
 import org.quartz.CronScheduleBuilder
 import org.quartz.JobBuilder
 import org.quartz.JobDataMap
@@ -21,6 +22,7 @@ class SchedulerService implements ApplicationContextAware{
 
     Scheduler quartzScheduler
     FrameworkService frameworkService
+    JobSchedulerCalendarService jobSchedulerCalendarService
 
     /**
      * It retrieves all of the schedules that match with the criteria expressed on its params
@@ -171,8 +173,9 @@ class SchedulerService implements ApplicationContextAware{
      * @param ScheduledExecution
      * @return boolean it returns true if at least one job was scheduled
      */
-    def handleScheduleDefinitions(ScheduledExecution scheduledExecution, isUpdate = false, calendarName = null){
+    def handleScheduleDefinitions(ScheduledExecution scheduledExecution, isUpdate = false){
         if(scheduledExecution){
+            def calendarName = handleJobCalendar(scheduledExecution)
             cleanRemovedScheduleDef(scheduledExecution)
             def jobDetail = quartzScheduler.getJobDetail(JobKey.jobKey(scheduledExecution.generateJobScheduledName(), scheduledExecution.generateJobGroupName()))
             if(!jobDetail){
@@ -252,8 +255,6 @@ class SchedulerService implements ApplicationContextAware{
                 .withIdentity(jobname, jobgroup)
                 .withDescription(se.description)
                 .usingJobData(new JobDataMap(createJobDetailMap(se)))
-
-
         return jobDetailBuilder.build()
     }
 
@@ -270,7 +271,6 @@ class SchedulerService implements ApplicationContextAware{
             data.put("userRoles", se.userRoleList)
             if(frameworkService.isClusterModeEnabled()){
                 data.put("serverUUID", frameworkService.getServerUUID())
-                //data.put("serverUUID", nextExecNode(se))
             }
         }
 
@@ -334,6 +334,39 @@ class SchedulerService implements ApplicationContextAware{
             it.save()
         }
         return [scheduleDefs : scheduleDefs]
+    }
+
+    /**
+     * It checks whether a calendar should be applied to the job or not
+     * @param ScheduledExecution
+     */
+    def handleJobCalendar(ScheduledExecution se){
+        String calendarName = null
+
+        if(jobSchedulerCalendarService.isCalendarEnable()){
+            Map calendarsMap = jobSchedulerCalendarService.getCalendar(se.project, se.uuid)
+            if(calendarsMap){
+                calendarName = calendarsMap.name
+                this.registerCalendar(calendarName,calendarsMap.rundeckCalendar , false )
+            }
+        }
+        return calendarName
+    }
+
+    /**
+     * It add/update a calendar into the quartz scheduler
+     * @param calendarName
+     * @param calendar calendar instance
+     * @param force it forces the calendar to be added/updated on the quartz scheduler
+     */
+    def registerCalendar(String calendarName, Calendar calendar, boolean force){
+        if(force){
+            quartzScheduler.addCalendar(calendarName, calendar, true, false)
+        }else{
+            if(!quartzScheduler.getCalendar(calendarName)){
+                quartzScheduler.addCalendar(calendarName, calendar, false, false)
+            }
+        }
     }
 
 }

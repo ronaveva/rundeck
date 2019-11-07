@@ -104,38 +104,37 @@ class ProjectSchedulesController extends ControllerBase{
     }
 
     def persistSchedule(){
-        withForm{
-            AuthContext authContext = frameworkService.getAuthContextForSubjectAndProject(session.subject, params.project)
-            if (unauthorizedResponse(
-                    frameworkService.authorizeProjectResourceAll(
-                            authContext,
-                            AuthorizationUtil.resourceType('event'),
-                            [AuthConstants.ACTION_READ],
-                            params.project
-                    ),
-                    AuthConstants.ACTION_ADMIN,
-                    'schedules',
-                    params.project
-            )) {
-                return
-            }
-            def result = schedulerService.persistScheduleDef(request.JSON.schedule)
-            def errors
-            if(result.failed){
-                errors = result.schedule.errors.allErrors.collect {g.message(error: it)}.join(", ")
-            }
-            render(contentType:'application/json',text:
-                    ([
-                            schedule        : result.schedule,
-                            errors          : errors,
-                            failed          : result.failed
 
-                    ] )as JSON
-            )
-        }.invalidToken{
-            request.errorCode='request.error.invalidtoken.message'
-            renderErrorView([:])
+        AuthContext authContext = frameworkService.getAuthContextForSubjectAndProject(session.subject, params.project)
+        if (unauthorizedResponse(
+                frameworkService.authorizeProjectResourceAll(
+                        authContext,
+                        AuthorizationUtil.resourceType('event'),
+                        [AuthConstants.ACTION_READ],
+                        params.project
+                ),
+                AuthConstants.ACTION_ADMIN,
+                'schedules',
+                params.project
+        )) {
+            return
         }
+        def result = schedulerService.persistScheduleDef(request.JSON.schedule)
+        def errors
+        if(result.failed){
+            errors = result.schedule.errors.allErrors.collect {g.message(error: it)}.join(", ")
+        }
+        result?.schedulesMap = result?.schedule?.collect{
+            return it.toMap()
+        }
+        render(contentType:'application/json',text:
+                ([
+                        schedule        : result.schedulesMap,
+                        errors          : errors,
+                        failed          : result.failed
+
+                ] )as JSON
+        )
     }
 
     def deleteSchedule(){

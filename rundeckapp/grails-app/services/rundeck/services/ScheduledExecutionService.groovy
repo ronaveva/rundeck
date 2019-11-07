@@ -152,7 +152,6 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
     JobLifecyclePluginService jobLifecyclePluginService
     ExecutionLifecyclePluginService executionLifecyclePluginService
     def schedulerService
-    JobSchedulerCalendarService jobSchedulerCalendarService
 
     @Override
     void afterPropertiesSet() throws Exception {
@@ -1126,16 +1125,6 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
             }
         }
 
-        String calendarName = null
-
-        if(jobSchedulerCalendarService.isCalendarEnable()){
-            Map calendarsMap = jobSchedulerCalendarService.getCalendar(se.project, se.uuid)
-            if(calendarsMap){
-                calendarName = calendarsMap.name
-                this.registerCalendar(calendarName,calendarsMap.rundeckCalendar , false )
-            }
-        }
-
         def jobDetail = schedulerService.createJobDetail(se)
 
         jobDetail.getJobDataMap().put("bySchedule", true)
@@ -1147,11 +1136,11 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         //TODO: check for schedule def list, return the closest
         if ( hasJobScheduled(se) ) {
             log.info("rescheduling existing job in project ${se.project} ${se.extid}: " + se.generateJobScheduledName())
-            def result = schedulerService.handleScheduleDefinitions(se, true, calendarName)
+            def result = schedulerService.handleScheduleDefinitions(se, true)
             nextTime = result? result.nextTime: null
         } else {
             log.info("scheduling new job in project ${se.project} ${se.extid}: " + se.generateJobScheduledName())
-            def result = schedulerService.handleScheduleDefinitions(se, false, calendarName)
+            def result = schedulerService.handleScheduleDefinitions(se, false)
             nextTime = result? result.nextTime: null
         }
 
@@ -4375,16 +4364,5 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
     Date nextExecutionTime(ScheduledExecution se, boolean require=false) {
         schedulerService.nextExecutionTime(se, require)
     }
-
-    def registerCalendar(String calendarName, Calendar calendar, boolean force){
-        if(force){
-            quartzScheduler.addCalendar(calendarName, calendar, true, false)
-        }else{
-            if(!quartzScheduler.getCalendar(calendarName)){
-                quartzScheduler.addCalendar(calendarName, calendar, false, false)
-            }
-        }
-    }
-
 
 }
