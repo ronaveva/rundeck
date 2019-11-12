@@ -199,8 +199,17 @@ class SchedulerService implements ApplicationContextAware{
                         nextTime    : nextTime
                 ]
             }else if(scheduledExecution.generateCrontabExression() && scheduledExecution.shouldScheduleExecution()){
+                Set triggerList = []
                 def trigger = createTrigger(scheduledExecution, calendarName)
-                def nextTime = quartzScheduler.scheduleJob(jobDetail, trigger)
+                triggerList << trigger
+
+                def nextTime
+                try{
+                    nextTime = quartzScheduler.scheduleJob(jobDetail, triggerList, isUpdate)
+                }catch(Exception e){
+                    log.error(e.getMessage())
+                }
+
                 log.info("scheduling trigger for job ${scheduledExecution.generateJobScheduledName()} in project ${scheduledExecution.project} ${scheduledExecution.extid}: " +
                         "${scheduledExecution.generateJobScheduledName()}")
                 return [scheduled   : true,
@@ -367,6 +376,36 @@ class SchedulerService implements ApplicationContextAware{
                 quartzScheduler.addCalendar(calendarName, calendar, false, false)
             }
         }
+    }
+
+
+
+    /**
+     * Return calendars from a scheduled job
+     * @param se
+     * @return
+     */
+    List hasCalendars(ScheduledExecution se) {
+        if(!se.scheduled){
+            return null
+        }
+
+        def calendars = []
+
+        def triggers = quartzScheduler.getTriggersOfJob(JobKey.jobKey(se.generateJobScheduledName(), se.generateJobGroupName()))
+        if(triggers){
+            triggers.each {Trigger trigger->
+                if(trigger.calendarName!=null){
+                    calendars << trigger.calendarName
+                }
+            }
+        }
+
+        if(calendars.size()==0){
+            return null
+        }
+
+        return calendars
     }
 
 }
