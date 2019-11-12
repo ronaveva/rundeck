@@ -256,19 +256,33 @@
                             this.schedule.schedule.dayOfWeek,
                             this.schedule.schedule.month,
                         );
-                        this.hourSelected = decomposedSchedule.hour;
-                        this.minuteSelected = decomposedSchedule.minute;
-                        this.selectedDays = decomposedSchedule.days.length < 7 ? decomposedSchedule.days : [];
-                        this.selectedMonths = decomposedSchedule.months.length < 12 ? decomposedSchedule.months : [];
-                        this.allDays = decomposedSchedule.days.length == 7;
-                        this.allMonths = decomposedSchedule.months.length == 12;
+
+                        this.loadScheduleIntoSimpleTab(decomposedSchedule);
                     }
 
                     this.name = this.schedule.name
                     this.description = this.schedule.description
                 }
             },
+            loadScheduleIntoSimpleTab (decomposedSchedule){
+                this.hourSelected = decomposedSchedule.hour;
+                this.minuteSelected = decomposedSchedule.minute;
+                this.selectedDays = decomposedSchedule.days.length < 7 ? decomposedSchedule.days : [];
+                this.selectedMonths = decomposedSchedule.months.length < 12 ? decomposedSchedule.months : [];
+                this.allDays = decomposedSchedule.days.length == 7;
+                this.allMonths = decomposedSchedule.months.length == 12;
+            },
             showSimpleCron(){
+                var cronComponents = this.scheduleToPersist.cronString.split(" ");
+
+                var decomposedSchedule = ScheduleUtils.getSimpleDecomposition(
+                    cronComponents[1],
+                    cronComponents[2],
+                    cronComponents[5],
+                    cronComponents[4],
+                );
+                this.loadScheduleIntoSimpleTab(decomposedSchedule);
+
                 this.isCronExpression = false;
             },
             showCronExpression(){

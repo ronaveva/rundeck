@@ -33,6 +33,7 @@ export default {
   decomposeUsingValues: function (value, listOfLongValues, indexStartAtZero) {
     if (!value) return [];
     if (value == '*') return listOfLongValues;
+    if (value == '?') return listOfLongValues;
 
     var splitItems = value.split(',');
 
