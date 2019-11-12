@@ -139,6 +139,7 @@ class SchedulerService implements ApplicationContextAware{
         oldSchedule.year = newSchedule.year
         oldSchedule.name = newSchedule.name
         oldSchedule.description = newSchedule.description
+        oldSchedule.type = newSchedule.type
         return oldSchedule
     }
 
