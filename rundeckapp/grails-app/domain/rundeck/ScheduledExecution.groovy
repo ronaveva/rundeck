@@ -223,6 +223,13 @@ class ScheduledExecution extends ExecutionContext implements EmbeddedJsonData {
 		scheduledJobs {
 			eq 'scheduled', true
 		}
+        scheduledJobsWithScheduleDef {
+
+            or {
+                eq('scheduled', true)
+                isNotNull('scheduleDefinitions')
+            }
+        }
 		withServerUUID { uuid ->
 			eq 'serverNodeUUID', uuid
 		}

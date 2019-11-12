@@ -43,11 +43,8 @@ export default {
       // Initialize the form data and iteate over any
       // file sent over appending the files to the form data.
       let formData = new FormData();
-      console.log(this.files)
-        console.log(this.files.length)
       for (var i = 0; i < this.files.length; i++) {
-        let file = this.files[i];uploadPlugin
-
+        let file = this.files[i];
         formData.append("pluginFile", file);
       }
       this.$store.dispatch("overlay/openOverlay", {

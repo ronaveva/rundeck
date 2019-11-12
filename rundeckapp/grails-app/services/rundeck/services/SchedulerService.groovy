@@ -15,6 +15,7 @@ import org.springframework.context.ApplicationContextAware
 import rundeck.Project
 import rundeck.ScheduleDef
 import rundeck.ScheduledExecution
+import rundeck.controllers.ScheduleDefYAMLException
 import rundeck.quartzjobs.ExecutionJob
 
 @Transactional
@@ -23,6 +24,7 @@ class SchedulerService implements ApplicationContextAware{
     Scheduler quartzScheduler
     FrameworkService frameworkService
     JobSchedulerCalendarService jobSchedulerCalendarService
+    def messageSource
 
     /**
      * It retrieves all of the schedules that match with the criteria expressed on its params
@@ -192,7 +194,7 @@ class SchedulerService implements ApplicationContextAware{
                         log.info("scheduling updated trigger for job ${scheduledExecution.generateJobScheduledName()} in project ${scheduledExecution.project} ${scheduledExecution.extid}: ${triggerName}")
                     }
                 }
-                scheduledExecution.scheduled = true
+                //scheduledExecution.scheduled = true
                 quartzScheduler.scheduleJob(jobDetail, triggerList, true)
                 def nextTime = nextExecutionTime(scheduledExecution)
                 return [scheduled   : true,
@@ -285,7 +287,7 @@ class SchedulerService implements ApplicationContextAware{
      * @return
      */
     Date nextExecutionTime(ScheduledExecution se, boolean require=false) {
-        if(!se.scheduled){
+        if(!se.scheduled && !se.scheduleDefinitions){
             return new Date(ScheduledExecutionService.TWO_HUNDRED_YEARS)
         }
         if(!require && (!se.scheduleEnabled || !se.executionEnabled)){
@@ -327,13 +329,48 @@ class SchedulerService implements ApplicationContextAware{
      * It parses the input stream into schedule definitions
      * @param input either an inputStream, a File, or a String
      */
-    def parseUploadedFile (input, project){
-        def scheduleDefs = input.decodeScheduleDefinitionYAML()
-        scheduleDefs.each{
-            it.project = project
-            it.save()
+    def parseUploadedFile (input, project, update){
+        def scheduleDefs
+        def success = true
+        try{
+            scheduleDefs = input.decodeScheduleDefinitionYAML()
+        } catch (ScheduleDefYAMLException ex){
+            success = false
+            log.error("Error parsing uploaded schedule definition Yaml: ${ex}")
+            log.warn("Error parsing schedule definition Yaml", ex)
+            return [errors  : ["${ex}"],
+                    success : success]
+        }catch (Exception e) {
+            success = false
+            log.error("Error parsing uploaded schedule definition Yaml", e)
+            return [errors  : ["${e.getLocalizedMessage()}"],
+                    success : success]
         }
-        return [scheduleDefs : scheduleDefs]
+        def errors = []
+        def schedulesToSave = []
+        scheduleDefs.each{ scheduleDef ->
+            def existingSchedule = ScheduleDef.findByNameAndProject(scheduleDef.name, project)
+            if(existingSchedule){
+                scheduleDef = updateScheduleDef(existingSchedule, scheduleDef)
+            }else{
+                scheduleDef.project = project
+            }
+            schedulesToSave << scheduleDef
+            if(!scheduleDef.validate()){
+                errors << scheduleDef.errors.allErrors.collect {messageSource.getMessage(it,Locale.default)}.join(", ")
+            }
+        }
+        if(errors.isEmpty()){
+            schedulesToSave.each {
+                it.save()
+            }
+        }else{
+            success = false
+        }
+
+        return [scheduleDefs    : schedulesToSave,
+                errors          : errors,
+                success         : success]
     }
 
     /**

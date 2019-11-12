@@ -21,8 +21,6 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import rundeck.ScheduleDef
-import rundeck.ScheduledExecution
-import rundeck.controllers.JobXMLException
 import rundeck.controllers.ScheduleDefYAMLException
 
 class ScheduleDefinitionYAMLCodec {
@@ -34,7 +32,7 @@ class ScheduleDefinitionYAMLCodec {
             //set multiline strings to use unix line endings
             return BuilderUtil.replaceLineEndings(val,DumperOptions.LineBreak.UNIX.getString())
         }else if(val instanceof List) {
-            return val.collect(JobsYAMLCodec.&canonicalValue)
+            return val.collect(ScheduleDefinitionYAMLCodec.&canonicalValue)
         }
         return val
     }
@@ -127,7 +125,7 @@ class ScheduleDefinitionYAMLCodec {
                     try {
                         list << ScheduleDef.fromMap(scheduleDefMap)
                     } catch (Exception e) {
-                        throw new ScheduleDefYAMLException("Unable to create Job: " + e.getMessage(),e)
+                        throw new ScheduleDefYAMLException("Unable to create Schedule Definition: " + e.getMessage(),e)
                     }
                 } else {
                     throw new ScheduleDefYAMLException("Unexpected data type: " + scheduleDefMap.class.name)

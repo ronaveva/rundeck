@@ -83,8 +83,8 @@ export async function persistUploadedDefinitions(formData: any){
     url: `${window._rundeck.rdBase}projectSchedules/uploadFileDefinition`,
     withCredentials: true
   }).then(response => {
-    if (response.data.err) {
-      return response.data.err
+    if (response.data.errors) {
+      return response.data.errors
     }else{
       return true
     }
