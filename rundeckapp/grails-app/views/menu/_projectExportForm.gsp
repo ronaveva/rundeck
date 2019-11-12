@@ -130,6 +130,19 @@
                     <i class="glyphicon glyphicon-ban-circle"></i> Schedule Definitions (Unauthorized)
                   </div>
                 </auth:resourceAllowed>
+                <feature:enabled name="calendar">
+                <auth:resourceAllowed action="${[AuthConstants.ACTION_ADMIN]}" context='application' type="project" name="${params.project}">
+                  <div class="checkbox">
+                    <g:checkBox name="exportCalendars" value="true"/>
+                    <label for="exportCalendars">Calendars</label>
+                  </div>
+                </auth:resourceAllowed>
+                <auth:resourceAllowed action="${[AuthConstants.ACTION_ADMIN]}" context='application' type="project" name="${params.project}" has="false">
+                  <div class="checkbox disabled text-primary">
+                    <i class="glyphicon glyphicon-ban-circle"></i> Calendars (Unauthorized)
+                  </div>
+                </auth:resourceAllowed>
+                </feature:enabled>
               </div>
             </div>
 

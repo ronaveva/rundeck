@@ -36,6 +36,7 @@ class ProjectArchiveParams implements ProjectArchiveImportRequest, Validateable{
     Boolean importScm=false
     Boolean importWebhooks=false
     Boolean importScheduleDefinitions=false
+    Boolean importCalendars=false
     Boolean validateJobref=false
     Boolean exportAll
     Boolean exportJobs
@@ -45,6 +46,7 @@ class ProjectArchiveParams implements ProjectArchiveImportRequest, Validateable{
     Boolean exportAcls
     Boolean exportScm
     Boolean exportWebhooks
+    Boolean exportCalendars
     String stripJobRef
     Boolean exportScheduleDefinitions
 
@@ -57,6 +59,7 @@ class ProjectArchiveParams implements ProjectArchiveImportRequest, Validateable{
         importScm(nullable: true)
         importWebhooks(nullable: true)
         importScheduleDefinitions(nullable:true)
+        importCalendars(nullable: true)
         exportAll(nullable: true)
         exportJobs(nullable: true)
         exportExecutions(nullable: true)
@@ -65,6 +68,7 @@ class ProjectArchiveParams implements ProjectArchiveImportRequest, Validateable{
         exportAcls(nullable: true)
         exportScm(nullable: true)
         exportWebhooks(nullable: true)
+        exportCalendars(nullable: true)
         stripJobRef(nullable: true)
         exportScheduleDefinitions(nullable: true)
     }
@@ -80,7 +84,8 @@ class ProjectArchiveParams implements ProjectArchiveImportRequest, Validateable{
                 scm                         : exportScm ?: false,
                 webhooks                    : exportWebhooks ?: false,
                 stripJobRef                 : stripJobRef,
-                scheduleDefinitions         : exportScheduleDefinitions?: false
+                scheduleDefinitions         : exportScheduleDefinitions?: false,
+                calendars                   : exportCalendars ?: false
         )
     }
 

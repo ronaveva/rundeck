@@ -27,5 +27,6 @@ interface ProjectArchiveImportRequest {
     Boolean getImportACL()
     Boolean getImportWebhooks()
     Boolean getImportScheduleDefinitions()
+    Boolean getImportCalendars()
 
 }

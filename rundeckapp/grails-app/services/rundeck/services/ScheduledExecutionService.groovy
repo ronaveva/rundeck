@@ -642,6 +642,11 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         }
     }
 
+    def rescheduleJob(Long id) {
+        def scheduledExecution = ScheduledExecution.get(id)
+        rescheduleJob(scheduledExecution, false, null, null, false)
+    }
+
     def rescheduleJob(ScheduledExecution scheduledExecution) {
         rescheduleJob(scheduledExecution, false, null, null, false)
     }
@@ -4369,6 +4374,22 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
      */
     Date nextExecutionTime(ScheduledExecution se, boolean require=false) {
         schedulerService.nextExecutionTime(se, require)
+    }
+
+    /**
+     * Return a map of job ID with its calendars
+     * @param scheduledExecutions
+     * @return
+     */
+    Map hasCalendars(Collection<ScheduledExecution> scheduledExecutions){
+        def map = [ : ]
+        scheduledExecutions.each {
+            def calendars = schedulerService.hasCalendars(it)
+            if(calendars){
+                map[it.id] = calendars
+            }
+        }
+        map
     }
 
 }

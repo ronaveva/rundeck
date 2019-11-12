@@ -24,6 +24,8 @@
                     <div class="">
                         <g:set var="nextExecution"
                                value="${ (nextExecutions)? nextExecutions[scheduledExecution.id] : null}"/>
+                        <g:set var="calendar"
+                               value="${ (calendars)? calendars[scheduledExecution.id] : null}"/>
                         <g:set var="clusterUUID"
                                value="${ (clusterMap)? clusterMap[scheduledExecution.id] : null}"/>
                         <g:set var="currentTime" value="${new Date()}"/>
@@ -169,6 +171,14 @@
                                         <span class="text-success">
                                             <g:icon name="time"/>
                                         </span>
+
+                                        <g:if test="${calendar}">
+                                        <span class="text-success has_tooltip" title="${message(code:"scheduledExecution.scheduled.calendar.title")}"
+                                              data-placement="right">
+                                            <i class="glyphicon glyphicon-calendar"></i>
+                                        </span>
+                                    </g:if>
+
                                     </g:else>
                                     <span title="${remoteClusterNodeUUID ? g.message(code: "scheduled.to.run.on.server.0", args:[remoteClusterNodeUUID]) : ''} at ${g.relativeDate(atDate: nextExecution)}"
                                             class="text-secondary">
