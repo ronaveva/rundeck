@@ -690,7 +690,13 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
      * @return
      */
     def listScheduledJobs(String serverUUID = null, String project = null){
-        def results = ScheduledExecution.scheduledJobs()
+        //TODO: check for feature to be enabled and execute other query
+        def results
+        if(true){
+            results = ScheduledExecution.scheduledJobsWithScheduleDef()
+        }else {
+            results = ScheduledExecution.scheduledJobs()
+        }
         if (serverUUID) {
             results = results.withServerUUID(serverUUID)
         }

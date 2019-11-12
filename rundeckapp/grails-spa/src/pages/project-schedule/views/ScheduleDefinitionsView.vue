@@ -157,7 +157,7 @@
                 this.closeSchedulePersistModal(payload.reload)
             });
             this.eventBus.$on('closeUploadDefinitionModal', (payload) =>{
-                this.closeUploadDefinitionModal()
+                this.closeUploadDefinitionModal(payload.reload)
             });
         },
         watch: {
@@ -226,10 +226,12 @@
             openUploadDefinitionModal(){
                 this.showUploadDefinitionModal = true
             },
-            closeUploadDefinitionModal(){
+            closeUploadDefinitionModal(reload){
                 this.showUploadDefinitionModal = false
+                if(reload){
+                    this.updateSearchResults(this.pagination.offset)
+                }
             }
-
         }
     });
 </script>

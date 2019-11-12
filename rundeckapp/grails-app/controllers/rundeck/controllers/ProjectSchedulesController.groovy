@@ -175,20 +175,21 @@ class ProjectSchedulesController extends ControllerBase{
         )) {
             return
         }
-        def failed = false
+        def result = [:]
+        result.success = true
         def file = request.getFile("scheduleUploadSelect")
         if (!file || file.empty) {
-            request.message = "No file was uploaded."
-            failed = true
+            result.success = false
+            result.errors = ["No file was uploaded."]
         }
 
-        def result
-        if(!failed){
-            result = schedulerService.parseUploadedFile(file.getInputStream(), params.project)
+        if(result.success){
+            result = schedulerService.parseUploadedFile(file.getInputStream(), params.project, params.update)
         }
         render(contentType:'application/json',text:
                 ([
-                        result: failed
+                        success: result.success,
+                        errors : result.errors
                 ] )as JSON
         )
     }
