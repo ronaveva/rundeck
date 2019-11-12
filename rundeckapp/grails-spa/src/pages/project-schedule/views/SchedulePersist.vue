@@ -88,14 +88,14 @@
                           v-model="allDays"
                         >
                         {{$t('Every Day')}}
-                        <div v-if="!allDays" class="_defaultInput" v-for="day in days">
+                        <div v-if="!allDays" class="_defaultInput" v-for="shortDay in shortDays">
                           <input
                             id="dayCheckbox"
                             type="checkbox"
-                            :value="day"
+                            :value="shortDay"
                             v-model="selectedDays"
                           >
-                          {{day}}
+                          {{shortDay}}
                         </div>
                       </div>
                     </div>
@@ -114,6 +114,7 @@
                             id="mothCheckbox"
                             type="checkbox"
                             :value="shortMonth"
+                            v-model="selectedMonths"
                           >
                           {{shortMonth}}
                         </div>
@@ -209,7 +210,9 @@
                 errors: "",
                 persistErrors: null,
                 selectedDays: [],
-                shortMonths: []
+                selectedMonths: [],
+                shortMonths: [],
+                shortDays: []
             }
         },
         methods: {
@@ -220,7 +223,8 @@
                     this.scheduleToPersist.name = this.name
                     this.scheduleToPersist.description = this.description
                     this.scheduleToPersist.id = this.schedule? this.schedule.id : null
-                    this.scheduleToPersist.project = window._rundeck.projectName
+                    this.scheduleToPersist.project = window._rundeck.projectName;
+                    if( !this.isCronExpression ) this.mapSimpleToCronExpression();
                     this.persistSchedule()
                 }
             },
@@ -228,21 +232,62 @@
                 this.eventBus.$emit('closeSchedulePersistModal', {'reload': reload});
                 this.$emit('closeSchedulePersistModal', true)
             },
+            mapSimpleToCronExpression(){
+              this.scheduleToPersist.cronString = ScheduleUtils.fromSimpleToCronExpression(
+                  this.hourSelected,
+                  this.minuteSelected,
+                  this.selectedDays,
+                  this.selectedMonths,
+                  this.allDays,
+                  this.allMonths
+              );
+            },
             populateEditValues(){
                 if(this.schedule){
                     if(this.schedule.type === 'CRON'){
                         this.isCronExpression = true
                         this.scheduleToPersist.cronString = ScheduleUtils.getCronExpression(this.schedule)
+                    } else if(this.schedule.type === 'SIMPLE'){
+                        this.isCronExpression = false;
+
+                        var decomposedSchedule = ScheduleUtils.getSimpleDecomposition(
+                            this.schedule.schedule.hour,
+                            this.schedule.schedule.minute,
+                            this.schedule.schedule.dayOfWeek,
+                            this.schedule.schedule.month,
+                        );
+
+                        this.loadScheduleIntoSimpleTab(decomposedSchedule);
                     }
+
                     this.name = this.schedule.name
                     this.description = this.schedule.description
                 }
             },
+            loadScheduleIntoSimpleTab (decomposedSchedule){
+                this.hourSelected = decomposedSchedule.hour;
+                this.minuteSelected = decomposedSchedule.minute;
+                this.selectedDays = decomposedSchedule.days.length < 7 ? decomposedSchedule.days : [];
+                this.selectedMonths = decomposedSchedule.months.length < 12 ? decomposedSchedule.months : [];
+                this.allDays = decomposedSchedule.days.length == 7;
+                this.allMonths = decomposedSchedule.months.length == 12;
+            },
             showSimpleCron(){
-                this.isCronExpression = false
+                var cronComponents = this.scheduleToPersist.cronString.split(" ");
+
+                var decomposedSchedule = ScheduleUtils.getSimpleDecomposition(
+                    cronComponents[1],
+                    cronComponents[2],
+                    cronComponents[5],
+                    cronComponents[4],
+                );
+                this.loadScheduleIntoSimpleTab(decomposedSchedule);
+
+                this.isCronExpression = false;
             },
             showCronExpression(){
-                this.isCronExpression = true
+                this.mapSimpleToCronExpression();
+                this.isCronExpression = true;
             },
             persistSchedule() {
                 return axios({
@@ -296,9 +341,14 @@
             this.minutes = minutes
             this.days = moment.localeData('en').weekdays()
             this.months = moment.localeData('en').months()
+
             var shortMonths = []
             jQuery.each(moment.localeData('en').monthsShort(), function(index, item){shortMonths.push(item.toUpperCase())})
             this.shortMonths = shortMonths
+
+            var shortDays = [];
+            jQuery.each(moment.localeData('en').weekdaysShort(), function(index, item){shortDays.push(item.toUpperCase())})
+            this.shortDays = shortDays;
         },
         mounted(){
             this.populateEditValues()
