@@ -131,6 +131,18 @@ class ScheduleDefinitionYAMLCodec {
                     throw new ScheduleDefYAMLException("Unexpected data type: " + scheduleDefMap.class.name)
                 }
             }
+        } else if (data instanceof Map) {
+            data.scheduleDefinitions.each { scheduleDefMap ->
+                if (scheduleDefMap instanceof Map) {
+                    try {
+                        list << ScheduleDef.fromMap(scheduleDefMap)
+                    } catch (Exception e) {
+                        throw new ScheduleDefYAMLException("Unable to create Schedule Definition: " + e.getMessage(), e)
+                    }
+                } else {
+                    throw new ScheduleDefYAMLException("Unexpected data type: " + scheduleDefMap.class.name)
+                }
+            }
         } else {
             throw new ScheduleDefYAMLException("Unexpected data type: " + data.class.name)
         }

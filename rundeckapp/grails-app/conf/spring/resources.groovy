@@ -75,6 +75,8 @@ import rundeck.services.LocalScheduleCalendarManager
 import rundeck.services.PasswordFieldsService
 import rundeck.services.QuartzJobScheduleManager
 import rundeck.services.audit.AuditEventsService
+import rundeck.services.schedules.exporter.ScheduleDefinitionsExporter
+import rundeck.services.schedules.importer.ScheduleDefinitionsImporter
 import rundeck.services.scm.ScmJobImporter
 import rundeckapp.init.ExternalStaticResourceConfigurer
 import rundeckapp.init.RundeckExtendedMessageBundle
@@ -552,4 +554,13 @@ beans={
             grailsApplication = grailsApplication
         }
     }
+
+    scheduleDefinitionsExporter(ScheduleDefinitionsExporter){
+        schedulerService = ref("schedulerService")
+    }
+
+    scheduleDefinitionsImporter(ScheduleDefinitionsImporter){
+        schedulerService = ref("schedulerService")
+    }
+
 }

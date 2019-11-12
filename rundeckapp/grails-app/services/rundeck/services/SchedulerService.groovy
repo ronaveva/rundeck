@@ -48,6 +48,16 @@ class SchedulerService implements ApplicationContextAware{
         ]
     }
 
+    /**
+     * It retrieves all of the schedules that match with the projectName
+     * @param project returned schedules belong to this project
+     * @return List<ScheduleDef>
+     */
+    def findAllByProject(String projectName) {
+        def results = ScheduleDef.findAllByProject(projectName)
+        return results
+    }
+
     def getScheduleDef(name, project){
         ScheduleDef schedDef = ScheduleDef.findOrCreateWhere(name : name, project : project, type: "CRON")
         schedDef.save()
@@ -404,6 +414,23 @@ class SchedulerService implements ApplicationContextAware{
                 quartzScheduler.addCalendar(calendarName, calendar, false, false)
             }
         }
+    }
+
+    def persistScheduleDefFromMap(scheduleDefMap, project){
+        def errors = []
+        def scheduleDef = ScheduleDef.fromMap(scheduleDefMap)
+        def existingSchedule = ScheduleDef.findByNameAndProject(scheduleDef.name, project)
+        if(existingSchedule){
+            scheduleDef = updateScheduleDef(existingSchedule, scheduleDef)
+        }else{
+            scheduleDef.project = project
+        }
+        if(!scheduleDef.validate()){
+            errors << scheduleDef.errors.allErrors.collect {messageSource.getMessage(it,Locale.default)}.join(", ")
+        }else{
+            scheduleDef.save()
+        }
+        return [errors: errors]
     }
 
 }

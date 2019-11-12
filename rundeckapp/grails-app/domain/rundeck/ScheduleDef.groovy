@@ -181,6 +181,7 @@ class ScheduleDef {
         map.description = description
         map.project = project
         map.type = type
+        map.cronString = generateCrontabExression()
         map.schedule = [hour:hour,minute:minute,seconds:seconds,month:month,year:year,dayOfMonth:dayOfMonth,dayOfWeek:dayOfWeek]
 
         if(scheduledExecutions){

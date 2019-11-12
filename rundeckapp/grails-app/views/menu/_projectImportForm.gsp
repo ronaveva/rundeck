@@ -185,6 +185,27 @@
             </div>
           </div>
           </feature:enabled>
+          <div class="list-group-item">
+            <h4 class="list-group-item-heading">Schedule Definitions</h4>
+            <div class="radio">
+              <input type="radio" name="importScheduleDefinitions" id="importscheduledefinitionstrue" value="true" checked/>
+              <label title="" for="importscheduledefinitionstrue">
+                <g:message code="archive.import.importScheduleDefinitions.true.title"/>
+              </label>
+              <span class="help-block">
+                <g:message code="archive.import.importScheduleDefinitions.true.help"/>
+              </span>
+            </div>
+            <div class="radio">
+              <input type="radio" name="importScheduleDefinitions" id="importscheduledefinitionsfalse" value="false"/>
+              <label title="" for="importscheduledefinitionsfalse">
+                <g:message code="archive.import.importScheduleDefinitions.false.title"/>
+              </label>
+              <span class="help-block">
+                <g:message code="archive.import.importScheduleDefinitions.false.help"/>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="card-footer">
