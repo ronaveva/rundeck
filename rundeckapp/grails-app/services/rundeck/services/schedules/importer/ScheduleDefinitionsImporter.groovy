@@ -20,12 +20,14 @@ class ScheduleDefinitionsImporter implements ProjectDataImporter{
         logger.info("Running Schedule Definitions import for project ${project}")
 
         Yaml yaml = new Yaml()
-        def data = yaml.loadAs(new FileReader(importFile), HashMap.class)
-        data.scheduleDefinitions.each { scheduleDefinition ->
-            logger.debug("Attempting to import Schedule Definition: ${scheduleDefinition.name}")
-            def result = schedulerService.persistScheduleDefFromMap(scheduleDefinition, project)
-            if(result.errors && !result.errors.isEmpty){
-                logger.error(result.errors)
+        if(importFile){
+            def data = yaml.loadAs(new FileReader(importFile), HashMap.class)
+            data.scheduleDefinitions.each { scheduleDefinition ->
+                logger.debug("Attempting to import Schedule Definition: ${scheduleDefinition.name}")
+                def result = schedulerService.persistScheduleDefFromMap(scheduleDefinition, project)
+                if(result.errors && !result.errors.isEmpty){
+                    logger.error(result.errors)
+                }
             }
         }
     }
