@@ -31,12 +31,18 @@ export interface ScheduleSearchResult {
   totalRecords: number
 }
 
+export interface StandardResponse {
+  messages: string[]
+  success: boolean
+}
+
 export async function getAllProjectSchedules(offset: number, scheduleName: string): Promise<ScheduleSearchResult> {
 
   const rundeckContext = getRundeckContext()
+  let offsetString = String(offset)
   const resp = await client.sendRequest({
     pathTemplate: '/projectSchedules/filteredProjectSchedules',
-    queryParameters: {project: rundeckContext.projectName, offset: offset, name: scheduleName},
+    queryParameters: {project: rundeckContext.projectName, offset: offsetString, name: scheduleName},
     baseUrl: rundeckContext.rdBase,
     method: 'GET'
   })
@@ -47,6 +53,24 @@ export async function getAllProjectSchedules(offset: number, scheduleName: strin
     return resp.parsedBody as ScheduleSearchResult
   }
 }
+
+export async function bulkDeleteSchedules(schedulesId: []): Promise<StandardResponse> {
+
+  const rundeckContext = getRundeckContext()
+  const resp = await client.sendRequest({
+    pathTemplate: '/projectSchedules/massiveScheduleDelete',
+    queryParameters: {project: rundeckContext.projectName},
+    body: { schedulesId: schedulesId},
+    baseUrl: rundeckContext.rdBase,
+    method: 'POST'
+  })
+  if (!resp.parsedBody) {
+    throw new Error(`Error execution bulk delete for project  ${rundeckContext.projectName}`)
+  } else {
+    return resp.parsedBody as StandardResponse
+  }
+}
+
 //TODO: fix this
 export async function persistUploadedDefinition(formData: any): Promise<boolean> {
   const rundeckContext = getRundeckContext()

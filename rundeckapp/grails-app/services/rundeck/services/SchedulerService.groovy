@@ -473,4 +473,30 @@ class SchedulerService implements ApplicationContextAware{
         return calendars
     }
 
+    /**
+     * It will delete all of the schedule definitions inside the list
+     * @param schedulesId List of schedules id to be deleted
+     * @param projectName
+     * @return
+     */
+    def massiveScheduleDelete(schedulesId, projectName){
+        def totalDeleted = 0
+        def totalRecieved = 0
+        if(schedulesId && projectName) {
+            totalRecieved = schedulesId.size()
+            def schedulesToDelete = []
+            schedulesId.each { scheduleId ->
+                schedulesToDelete << ScheduleDef.findByIdAndProject(scheduleId, projectName)
+            }
+            totalDeleted = schedulesToDelete.size()
+            schedulesToDelete.each {
+                delete([id: it.id])
+            }
+        }
+        [
+                messages:  ["Total Schedule definitions to be deleted : ${totalRecieved}","Total Schedule definitions deleted : ${totalDeleted}"],
+                success:    true
+        ]
+    }
+
 }

@@ -3,78 +3,99 @@
     <div class="col-xs-12">
       <div class="card">
         <div class="input-group">
-          <input type="search" name="name" placeholder="Project Schedule search: type name" class="form-control input-sm" v-model="searchFilters.name"/> <!-- i18n here -->
+          <input type="search" name="name" placeholder="Project Schedule search: type name" class="form-control input-sm" v-model="searchFilters.name"/>
           <span class="input-group-addon"><i class="glyphicon glyphicon-search "></i></span>
         </div>
-        <div>
-          <ul>
-            <div v-if="loading" class="project_list_item">
-              <b class="fas fa-spinner fa-spin loading-spinner text-muted fa-2x"></b>
-            </div>
-            <div class="project_list_item" data-bind="attr: { 'data-project': project }, " v-for="projectSchedule in scheduledDefinitions">
-              <div class="row row-hover row-border-top">
-                <div class="col-sm-6 col-md-8">
-                  <a href="${g.createLink(action:'',controller:'menu',params:[project:'<$>'])}" class="text-h3  link-hover  text-inverse project_list_item_link">
-                    <span>{{projectSchedule.name}}</span>
-                    <span class="text-secondary text-base"><em>{{projectSchedule.description}}</em></span>
-                  </a>
-                </div>
-                <div class="col-sm-6 col-md-2 text-center">
-                  <span>{{getCronExpression(projectSchedule)}}</span>
-                </div>
-                <div class="col-sm-12 col-md-2" >
-                  <div class="pull-right">
-                    <div class="btn-group dropdown-toggle-hover"> <!-- TODO: Permission checks to display appropriate options-->
-                      <a href="#" class="as-block link-hover link-block-padded text-inverse dropdown-toggle" data-toggle="dropdown">
-                        <span>{{$t("button.actions")}}</span>
-                        <span class="caret"></span>
-                      </a>
-                      <ul class="dropdown-menu pull-right" role="menu">
-                        <li>
-                          <a href="#"
-                             @click="openSchedulePersistModal(projectSchedule)">
-                            <span>{{$t("button.editSchedule")}}</span>
-                          </a>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                          <a href="#" @click="openScheduleAssign(projectSchedule)">
-                            <i class="glyphicon glyphicon-plus"></i>
-                            <span>{{$t("button.assignToJobs")}}</span>
-                          </a>
-                        </li>
-                        <li class="divider"></li>
-                        <li>
-                          <a href="#" @click="deleteSchedule(projectSchedule)">
-                            <i class="glyphicon glyphicon-minus"></i>
-                            <span>{{$t("button.deleteSchedule")}}</span>
-                          </a>
-                        </li>
-                      </ul>
+        <div class="card-content">
+          <div v-if="loading" class="project_list_item">
+            <b class="fas fa-spinner fa-spin loading-spinner text-muted fa-2x"></b>
+          </div>
+          <div class="card-content-full-width">
+            <table class=" table table-hover table-condensed " >
+              <tbody  v-if="scheduledDefinitions && scheduledDefinitions.length>0" class="history-executions">
+                <tr v-for="projectSchedule in scheduledDefinitions">
+                  <td class="eventicon" v-if="bulkDelete">
+                    <input
+                      type="checkbox"
+                      name="bulk_edit"
+                      :value="projectSchedule.id"
+                      v-model="bulkSelectedIds"
+                      class="_defaultInput"/>
+                  </td>
+                  <td>
+                    <a href="#" class="text-h3  link-hover  text-inverse project_list_item_link">
+                      <span>{{projectSchedule.name}}</span>
+                      <span class="text-secondary text-base"><em>{{projectSchedule.description}}</em></span>
+                    </a>
+                  </td>
+                  <td>
+                    <span>{{getCronExpression(projectSchedule)}}</span>
+                  </td>
+                  <td>
+                    <div class="pull-right">
+                      <div class="btn-group dropdown-toggle-hover">
+                        <a href="#" class="as-block link-hover link-block-padded text-inverse dropdown-toggle" data-toggle="dropdown">
+                          <span>{{$t("button.actions")}}</span>
+                          <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu pull-right" role="menu">
+                          <li>
+                            <a href="#"
+                               @click="openSchedulePersistModal(projectSchedule)">
+                              <span>{{$t("button.editSchedule")}}</span>
+                            </a>
+                          </li>
+                          <li class="divider"></li>
+                          <li>
+                            <a href="#" @click="openScheduleAssign(projectSchedule)">
+                              <i class="glyphicon glyphicon-plus"></i>
+                              <span>{{$t("button.assignToJobs")}}</span>
+                            </a>
+                          </li>
+                          <li class="divider"></li>
+                          <li>
+                            <a href="#" @click="deleteSchedule(projectSchedule)">
+                              <i class="glyphicon glyphicon-minus"></i>
+                              <span>{{$t("button.deleteSchedule")}}</span>
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <offset-pagination
-              :pagination="pagination"
-              @change="changePageOffset($event)"
-              :disabled="loading"
-              :showPrefix="false"
-            ></offset-pagination>
-          </ul>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <offset-pagination
+            :pagination="pagination"
+            @change="changePageOffset($event)"
+            :disabled="loading"
+            :showPrefix="false"
+          ></offset-pagination>
         </div>
       </div>
       <br>
       <div class="row" >
         <div class=" pull-right">
-          <button href="#" class="btn btn-default" @click="openUploadDefinitionModal()">
+          <button v-if="bulkDelete" href="#" class="btn btn-default btn-xs" @click="showBulkEditConfirm=true" :disabled="bulkSelectedIds.length  < 1">
+            <i class="btn-fill btn btn-danger btn-xs"></i>
+            <span v-if="bulkDelete">{{$t("button.deleteSelected")}}</span>
+          </button>
+          <button href="#" class="btn btn-default btn-xs" @click="switchBulkDelete(bulkDelete)">
+            <i class="glyphicon glyphicon-trash"></i>
+            <span v-if="!bulkDelete">{{$t("button.bulkDelete")}}</span>
+            <span v-else-if="bulkDelete">{{$t("button.cancelBulkDelete")}}</span>
+          </button>
+        </div>
+        <div class=" pull-right">
+          <button href="#" class="btn btn-default btn-xs" @click="openUploadDefinitionModal()">
             <i class="glyphicon glyphicon-upload"></i>
             <span>{{$t("button.uploadScheduleDefinitions")}}</span>
           </button>
         </div>
         <div class=" pull-right">
-          <button href="#" class="btn btn-default" @click="openSchedulePersistModal(null)"> <!-- TODO: add permission checks -->
+          <button href="#" class="btn btn-default btn-xs" @click="openSchedulePersistModal(null)">
             <i class="glyphicon glyphicon-upload"></i>
             <span>{{$t("button.createDefinition")}}</span>
           </button>
@@ -92,6 +113,25 @@
       v-if="this.showUploadDefinitionModal"
       v-bind:event-bus="eventBus">
     </schedule-upload>
+
+    <modal v-model="showBulkEditConfirm" id="bulkexecdelete" :title="$t('Bulk Delete Schedule Definitions')">
+      <i18n tag="p" path="button.deleteConfirm">
+        <strong>{{bulkSelectedIds.length}}</strong>
+        <span>{{$tc('scheduleDefinitions',bulkSelectedIds.length)}}</span>
+      </i18n>
+
+      <div slot="footer">
+        <btn @click="showBulkEditConfirm=false">
+          {{$t('cancel')}}
+        </btn>
+        <btn type="danger"
+             @click="deleteSchedules"
+             data-dismiss="modal">
+          {{$t('Delete Selected')}}
+        </btn>
+      </div>
+    </modal>
+
   </div>
 </template>
 
@@ -101,14 +141,14 @@
     import axios from 'axios'
     import OffsetPagination from '@rundeck/ui-trellis/src/components/utils/OffsetPagination.vue'
     import SchedulePersist from './SchedulePersist.vue'
-    import {
-        getRundeckContext,
-        RundeckContext
-    } from "@rundeck/ui-trellis"
     import ScheduleAssign from "@/pages/project-schedule/views/ScheduleAssign.vue"
     import Vue from "vue"
     import ScheduleUtils from "../utils/ScheduleUtils"
-    import { getAllProjectSchedules, ScheduleDefinition, ScheduleSearchResult} from "../scheduleDefinition";
+    import {
+        bulkDeleteSchedules,
+        getAllProjectSchedules,
+        StandardResponse
+    } from "../scheduleDefinition";
     import ScheduleUpload from "./ScheduleUpload";
 
     export default Vue.extend({
@@ -141,7 +181,11 @@
 
                 //element control
                 showScheduleAssign: false,
-                activeSchedule: {}
+                activeSchedule: {},
+                bulkDelete: false,
+                bulkSelectedIds: [],
+                responseFromDelete: StandardResponse,
+                showBulkEditConfirm: false
             }
         },
         async mounted() {
@@ -175,9 +219,9 @@
             async updateSearchResults(offset) {
                 this.loading = true;
                 try{
+                    this.pagination.offset = offset
                     this.scheduleSearchResult = await getAllProjectSchedules(this.pagination.offset, this.searchFilters.name)
                     this.scheduledDefinitions = this.scheduleSearchResult.schedules
-                    this.pagination.offset = this.scheduleSearchResult.offset
                     this.pagination.max = this.scheduleSearchResult.maxRows
                     this.pagination.total = this.scheduleSearchResult.totalRecords
                 }catch(err){
@@ -231,6 +275,18 @@
                 if(reload){
                     this.updateSearchResults(this.pagination.offset)
                 }
+            },
+            switchBulkDelete(bulkDelete){
+                this.bulkDelete = !bulkDelete
+            },
+            async deleteSchedules(){
+              this.responseFromDelete = await bulkDeleteSchedules(this.bulkSelectedIds)
+              if(this.responseFromDelete.success){
+                this.bulkSelectedIds = []
+                this.bulkDelete = false
+              }
+              this.showBulkEditConfirm = false
+              this.updateSearchResults(0)
             }
         }
     });

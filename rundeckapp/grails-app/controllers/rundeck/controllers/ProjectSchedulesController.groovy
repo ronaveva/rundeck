@@ -194,6 +194,31 @@ class ProjectSchedulesController extends ControllerBase{
         )
     }
 
+    def massiveScheduleDelete(){
+        AuthContext authContext = frameworkService.getAuthContextForSubjectAndProject(session.subject, params.project)
+        if (unauthorizedResponse(
+                frameworkService.authorizeProjectResourceAll(
+                        authContext,
+                        AuthorizationUtil.resourceType('event'),
+                        [AuthConstants.ACTION_READ],
+                        params.project
+                ),
+                AuthConstants.ACTION_ADMIN,
+                'schedules',
+                params.project
+        )) {
+            return
+        }
+        def schedulesId = request.JSON.schedulesId
+        def result = schedulerService.massiveScheduleDelete(schedulesId, params.project)
+        render(contentType:'application/json',text:
+                ([
+                        success     : result.success,
+                        messages    : result.messages
+                ] )as JSON
+        )
+    }
+
 }
 
 class ScheduleDefYAMLException extends Exception{
