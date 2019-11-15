@@ -173,7 +173,7 @@
                                         </span>
 
                                         <g:if test="${calendar}">
-                                        <span class="text-success has_tooltip" title="${message(code:"scheduledExecution.scheduled.calendar.title")}"
+                                        <span class="text-success has_tooltip" title="${message(code:"scheduledExecution.scheduled.calendar.title")} <br>${calendar}"
                                               data-placement="right">
                                             <i class="glyphicon glyphicon-calendar"></i>
                                         </span>

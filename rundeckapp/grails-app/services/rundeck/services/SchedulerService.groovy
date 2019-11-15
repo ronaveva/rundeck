@@ -450,27 +450,23 @@ class SchedulerService implements ApplicationContextAware{
      * @param se
      * @return
      */
-    List hasCalendars(ScheduledExecution se) {
-        if(!se.scheduled){
+    def hasCalendars(ScheduledExecution se) {
+        if (!se.scheduled) {
             return null
         }
 
-        def calendars = []
-
-        def triggers = quartzScheduler.getTriggersOfJob(JobKey.jobKey(se.generateJobScheduledName(), se.generateJobGroupName()))
-        if(triggers){
-            triggers.each {Trigger trigger->
-                if(trigger.calendarName!=null){
-                    calendars << trigger.calendarName
-                }
-            }
-        }
-
-        if(calendars.size()==0){
+        if (!jobSchedulerCalendarService.isCalendarEnable()) {
             return null
         }
 
-        return calendars
+        def calendar = jobSchedulerCalendarService.getCalendar(se.project, se.uuid)
+        //def triggers = quartzScheduler.getTriggersOfJob(JobKey.jobKey(se.generateJobScheduledName(), se.generateJobGroupName()))
+
+        if (calendar) {
+            return calendar.printCalendars()
+        } else {
+            return null
+        }
     }
 
     /**
