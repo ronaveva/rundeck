@@ -15,6 +15,11 @@ import {
   EventBus
 } from '../../utilities/vueEventBus.js'
 
+import ScheduleAssign from "./views/ScheduleAssign";
+import ScheduleDefinitionsView from "./views/ScheduleDefinitionsView";
+import SchedulePersist from "./views/SchedulePersist";
+import ScheduleUpload from "./views/ScheduleUpload";
+
 Vue.config.productionTip = false
 
 Vue.use(uiv)
@@ -52,7 +57,11 @@ new Vue({
     return {EventBus: EventBus}
   },
   components: {
-    App
+    App,
+    ScheduleAssign,
+    ScheduleDefinitionsView,
+    SchedulePersist,
+    ScheduleUpload
   },
   template: '<App v-bind:eventBus="EventBus"/>',
   i18n

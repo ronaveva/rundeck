@@ -55,6 +55,7 @@
 })
     </g:javascript>
 
+    <asset:stylesheet href="static/css/pages/project-schedule.css"/>
     <asset:javascript src="static/pages/project-schedule.js" defer="defer"/>
 </head>
 <body>

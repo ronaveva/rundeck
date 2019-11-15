@@ -1,12 +1,14 @@
+
+
 <template>
   <div v-if="project">
     <div class="col-xs-12">
       <div class="card">
-        <div class="input-group">
+        <div class="input-group search-bar">
           <input type="search" name="name" placeholder="Project Schedule search: type name" class="form-control input-sm" v-model="searchFilters.name"/>
           <span class="input-group-addon"><i class="glyphicon glyphicon-search "></i></span>
         </div>
-        <div class="card-content">
+        <div class="card-content ">
           <div v-if="loading" class="project_list_item">
             <b class="fas fa-spinner fa-spin loading-spinner text-muted fa-2x"></b>
           </div>
@@ -24,12 +26,12 @@
                   </td>
                   <td>
                     <a href="#" class="text-h3  link-hover  text-inverse project_list_item_link">
-                      <span>{{projectSchedule.name}}</span>
-                      <span class="text-secondary text-base"><em>{{projectSchedule.description}}</em></span>
+                      <small>{{projectSchedule.name}}</small>
+                      <small class="text-secondary text-base"><em>{{projectSchedule.description}}</em></small>
                     </a>
                   </td>
                   <td>
-                    <span>{{getCronExpression(projectSchedule)}}</span>
+                    <small>{{getCronExpression(projectSchedule)}}</small>
                   </td>
                   <td>
                     <div class="pull-right">
@@ -133,6 +135,9 @@
     </modal>
 
   </div>
+
+
+
 </template>
 
 
@@ -292,5 +297,25 @@
     });
 </script>
 
-<style>
+
+
+<style scoped lang="scss">
+  table.table-condensed td{
+    padding-bottom: 2px;
+    padding-top: 2px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .table{
+    margin-bottom: 0px;
+  }
+  a.dropdown-toggle{
+    padding: 2px;
+  }
+  div.card-content.compact {
+    padding : 5px;
+  }
+  div.search-bar {
+    margin-bottom: 0px;
+  }
 </style>
