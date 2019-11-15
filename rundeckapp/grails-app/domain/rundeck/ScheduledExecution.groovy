@@ -27,10 +27,13 @@ import com.dtolabs.rundeck.plugins.ServiceNameConstants
 import com.dtolabs.rundeck.plugins.jobs.JobOptionImpl
 import com.google.gson.Gson
 import groovy.json.JsonOutput
+import org.hibernate.criterion.CriteriaSpecification
+import org.hibernate.sql.JoinType
 import org.quartz.Calendar
 import org.quartz.TriggerUtils
 import org.quartz.impl.calendar.BaseCalendar
 import org.rundeck.util.Sizes
+
 
 class ScheduledExecution extends ExecutionContext implements EmbeddedJsonData {
     static final String RUNBOOK_MARKER='---'
@@ -181,6 +184,7 @@ class ScheduledExecution extends ExecutionContext implements EmbeddedJsonData {
         defaultTab(maxSize: 256, blank: true, nullable: true)
         maxMultipleExecutions(maxSize: 256, blank: true, nullable: true)
         pluginConfig(nullable: true)
+        scheduleDefinitions(nullable: true)
     }
 
     static mapping = {
@@ -224,10 +228,9 @@ class ScheduledExecution extends ExecutionContext implements EmbeddedJsonData {
 			eq 'scheduled', true
 		}
         scheduledJobsWithScheduleDef {
-
             or {
                 eq('scheduled', true)
-                isNotNull('scheduleDefinitions')
+                isNotEmpty('scheduleDefinitions')
             }
         }
 		withServerUUID { uuid ->
