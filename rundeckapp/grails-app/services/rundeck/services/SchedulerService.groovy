@@ -463,7 +463,7 @@ class SchedulerService implements ApplicationContextAware{
         //def triggers = quartzScheduler.getTriggersOfJob(JobKey.jobKey(se.generateJobScheduledName(), se.generateJobGroupName()))
 
         if (calendar) {
-            return calendar.printCalendars()
+            return calendar.rundeckCalendar.printCalendars()
         } else {
             return null
         }
