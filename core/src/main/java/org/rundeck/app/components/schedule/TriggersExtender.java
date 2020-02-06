@@ -25,8 +25,8 @@ public interface TriggersExtender {
      * Allows to modify triggers before being added to quartz scheduler
      *
      * @param jobDetail job detail data
-     * @param triggerBuilders triggers to modify
+     * @param triggerBuilderHelpers trigger builders plus additional data
      */
-    void extendTriggers(Object jobDetail, List<Object> triggerBuilders);
+    void extendTriggers(Object jobDetail, List<TriggerBuilderHelper> triggerBuilderHelpers);
 
 }

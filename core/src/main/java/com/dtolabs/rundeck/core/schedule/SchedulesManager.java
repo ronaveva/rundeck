@@ -1,6 +1,8 @@
 package com.dtolabs.rundeck.core.schedule;
 
 
+import org.rundeck.app.components.schedule.TriggerBuilderHelper;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +36,7 @@ public interface SchedulesManager {
      * @param cronExpression
      * @param priority
      */
-    Object createTriggerBuilder(String jobName, String jobGroup, String cronExpression, int priority);
+    TriggerBuilderHelper createTriggerBuilder(String jobName, String jobGroup, String cronExpression, int priority);
 
     /**
      * It creates a job trigger
@@ -42,7 +44,7 @@ public interface SchedulesManager {
      * @param cronExpression
      * @param triggerName
      */
-    Object createTriggerBuilder(String jobUUID, String cronExpression, String triggerName);
+    TriggerBuilderHelper createTriggerBuilder(String jobUUID, String cronExpression, String triggerName);
 
     /**
      * Return the next scheduled or predicted execution time for the scheduled job, and if it is not scheduled

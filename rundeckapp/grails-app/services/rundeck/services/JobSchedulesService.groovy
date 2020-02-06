@@ -1,7 +1,11 @@
 package rundeck.services
 
+import com.dtolabs.rundeck.core.plugins.configuration.ValidationException
 import com.dtolabs.rundeck.core.schedule.SchedulesManager
+import com.dtolabs.rundeck.plugins.jobs.JobOptionImpl
 import org.quartz.*
+import org.rundeck.app.components.schedule.TriggerBuilderHelper
+import org.rundeck.app.components.schedule.TriggersExtender
 import rundeck.ScheduledExecution
 
 class JobSchedulesService implements SchedulesManager {
@@ -20,12 +24,12 @@ class JobSchedulesService implements SchedulesManager {
     }
 
     @Override
-    TriggerBuilder createTriggerBuilder(String jobName, String jobGroup, String cronExpression, int priority) {
+    TriggerBuilderHelper createTriggerBuilder(String jobName, String jobGroup, String cronExpression, int priority) {
         return rundeckJobSchedulesManager.createTriggerBuilder(jobName, jobGroup, cronExpression, priority)
     }
 
     @Override
-    TriggerBuilder createTriggerBuilder(String jobUUID, String cronExpression, String triggerName) {
+    TriggerBuilderHelper createTriggerBuilder(String jobUUID, String cronExpression, String triggerName) {
         return rundeckJobSchedulesManager.createTriggerBuilder(jobUUID, cronExpression, triggerName)
     }
 
@@ -69,13 +73,6 @@ class JobSchedulesService implements SchedulesManager {
         return rundeckJobSchedulesManager.nextExecutions(jobUuid, to, past)
     }
 
-    def setJobSchedules(ScheduledExecution se){
-        if(this.isSchedulesEnable()){
-            def scheduleDefinitions = this.getJobSchedules(se.uuid, se.project)
-            se.scheduleDefinitions = scheduleDefinitions
-        }
-    }
-
 }
 
 class LocalJobSchedulesManager implements SchedulesManager {
@@ -101,12 +98,12 @@ class LocalJobSchedulesManager implements SchedulesManager {
     }
 
     @Override
-    TriggerBuilder createTriggerBuilder(String jobName, String jobGroup, String cronExpression, int priority) {
+    TriggerBuilderHelper createTriggerBuilder(String jobName, String jobGroup, String cronExpression, int priority) {
         return createTriggerBuilderLocal(jobName, jobGroup, cronExpression, priority)
     }
 
     @Override
-    TriggerBuilder createTriggerBuilder(String jobUUID, String cronExpression, String triggerName) {
+    TriggerBuilderHelper createTriggerBuilder(String jobUUID, String cronExpression, String triggerName) {
         return createTriggerBuilder(ScheduledExecution.findByUuid(jobUUID))
     }
 
@@ -145,9 +142,9 @@ class LocalJobSchedulesManager implements SchedulesManager {
 
     @Override
     List<Date> nextExecutions(String jobUuid, Date to, boolean past) {
-        def triggerBuilder = this.createTriggerBuilder(jobUuid,null,null,null)
+        def triggerHelper = this.createTriggerBuilder(jobUuid,null,null)
         def jobDetail = scheduledExecutionService.createJobDetail(ScheduledExecution.findByUuid(jobUuid))
-        def triggerBuilderList = scheduledExecutionService.applyTriggerComponents(jobDetail , [triggerBuilder])
+        def triggerBuilderList = scheduledExecutionService.applyTriggerComponents(jobDetail , [triggerHelper])
         def dates = []
         triggerBuilderList?.each{ builder ->
             def trigger = builder.build()
@@ -182,7 +179,7 @@ class LocalJobSchedulesManager implements SchedulesManager {
         return scheduledExecutionService.registerOnQuartz(jobDetail, [triggerBuilder], true)
     }
 
-    TriggerBuilder createTriggerBuilderLocal(String jobName, String jobGroup, String cronExpression, int priority = 5) {
+    TriggerBuilderHelper createTriggerBuilderLocal(String jobName, String jobGroup, String cronExpression, int priority = 5) {
         TriggerBuilder triggerBuilder
         try {
             triggerBuilder = TriggerBuilder.newTrigger().withIdentity(jobName, jobGroup)
@@ -192,16 +189,18 @@ class LocalJobSchedulesManager implements SchedulesManager {
         } catch (java.text.ParseException ex) {
             throw new RuntimeException("Failed creating trigger. Invalid cron expression: " + cronExpression )
         }
-        return triggerBuilder
+        return (new TriggerHelperImpl(triggerBuilder, null))
     }
 
-    TriggerBuilder createTriggerBuilder(ScheduledExecution se) {
+    TriggerBuilderHelper createTriggerBuilder(ScheduledExecution se) {
         TriggerBuilder triggerBuilder
         def cronExpression = se.generateCrontabExression()
+        def builderParams = [:]
         try {
             if(se.timeZone){
                 triggerBuilder = TriggerBuilder.newTrigger().withIdentity(se.generateJobScheduledName(), se.generateJobGroupName())
                         .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression).inTimeZone(TimeZone.getTimeZone(se.timeZone)))
+                builderParams[TriggerHelperImpl.TIME_ZONE_KEY] = TimeZone.getTimeZone(se.timeZone)
             }else {
                 triggerBuilder = TriggerBuilder.newTrigger().withIdentity(se.generateJobScheduledName(), se.generateJobGroupName())
                         .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
@@ -209,7 +208,7 @@ class LocalJobSchedulesManager implements SchedulesManager {
         } catch (java.text.ParseException ex) {
             throw new RuntimeException("Failed creating trigger. Invalid cron expression: " + cronExpression )
         }
-        return triggerBuilder
+        return (new TriggerHelperImpl(triggerBuilder, builderParams))
     }
 
     /**
@@ -229,4 +228,35 @@ class LocalJobSchedulesManager implements SchedulesManager {
         results.list()
     }
 
+}
+
+class TriggerHelperImpl implements TriggerBuilderHelper {
+
+    static final String TIME_ZONE_KEY = 'timeZone'
+
+    TriggerBuilder triggerBuilder
+    Map params
+
+    TriggerHelperImpl(TriggerBuilder triggerBuilder, Map params) {
+        this.triggerBuilder = triggerBuilder
+        this.params = params
+    }
+
+    @Override
+    Object getTriggerBuilder() {
+        return triggerBuilder
+    }
+
+    @Override
+    Map getParams() {
+        return params
+    }
+
+    @Override
+    Object getTimeZone() {
+        if(params){
+            return params[TIME_ZONE_KEY]
+        }
+        return null
+    }
 }

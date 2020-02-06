@@ -26,6 +26,7 @@ import org.hibernate.criterion.Projections
 import org.hibernate.criterion.Subqueries
 import org.rundeck.app.components.jobs.JobQuery
 import org.rundeck.app.components.jobs.JobQueryInput
+import org.rundeck.app.components.schedule.TriggerBuilderHelper
 import org.rundeck.app.components.schedule.TriggersExtender
 import org.rundeck.core.auth.AuthConstants
 import com.dtolabs.rundeck.core.common.Framework
@@ -4470,11 +4471,11 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
      * @param temporary indicates it should not be added to quartz
      * @return nextDate next execution date
      */
-    def registerOnQuartz(JobDetail jobDetail, List<TriggerBuilder> triggerBuilderList, temporary = false){
-        triggerBuilderList = applyTriggerComponents(jobDetail, triggerBuilderList)
+    def registerOnQuartz(JobDetail jobDetail, List<TriggerBuilderHelper> triggerBuilderHelperList, temporary = false){
+        triggerBuilderHelperList = applyTriggerComponents(jobDetail, triggerBuilderHelperList)
         Set triggers = []
-        triggerBuilderList?.each {
-            def trigger = it.build()
+        triggerBuilderHelperList?.each {
+            def trigger = it.getTriggerBuilder().build()
             triggers.add(trigger)
         }
 
@@ -4484,12 +4485,12 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         return getNextExecutionDateFromTriggers(triggers)
     }
 
-    def applyTriggerComponents(JobDetail jobDetail, List<TriggerBuilder> triggerBuilderList){
+    def applyTriggerComponents(JobDetail jobDetail, List<TriggerBuilderHelper> triggerBuilderHelperList){
         def triggerComponents = applicationContext.getBeansOfType(TriggersExtender)
         triggerComponents?.each {
-            it.extendTriggers(jobDetail, triggerBuilderList)
+            it.extendTriggers(jobDetail, triggerBuilderHelperList)
         }
-        return triggerBuilderList
+        return triggerBuilderHelperList
     }
 
     def getNextExecutionDateFromTriggers(triggers){

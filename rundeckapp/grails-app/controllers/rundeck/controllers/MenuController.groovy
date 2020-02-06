@@ -649,11 +649,11 @@ class MenuController extends ControllerBase implements ApplicationContextAware{
             results.jobauthorizations[AuthConstants.ACTION_RUN]?.contains(se.id.toString())
         } : results.nextScheduled
         def formatted = jobs.collect {ScheduledExecution job->
-            [name: job.jobName, group: job.groupPath, project: job.project, id: job.extid]
+            [name: job.jobName, group: job.groupPath, project: job.project, id: job.extid, total: results.total]
         }
         respond(
                 [formats: ['json']],
-                formatted,
+                formatted
         )
     }
     private def listWorkflows(ScheduledExecutionQuery query,AuthContext authContext,String user) {
