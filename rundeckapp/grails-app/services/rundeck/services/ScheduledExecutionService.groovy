@@ -4485,14 +4485,25 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         return getNextExecutionDateFromTriggers(triggers)
     }
 
+    /**
+     * It calls every TriggersExtender bean to apply extra settings to the triggers
+     * @param jobDetail
+     * @param triggerBuilderHelperList
+     * @return triggerBuilderHelperList
+     */
     def applyTriggerComponents(JobDetail jobDetail, List<TriggerBuilderHelper> triggerBuilderHelperList){
         def triggerComponents = applicationContext.getBeansOfType(TriggersExtender)
-        triggerComponents?.each {
-            it.extendTriggers(jobDetail, triggerBuilderHelperList)
+        triggerComponents?.each { name, triggerComponent ->
+            triggerComponent.extendTriggers(jobDetail, triggerBuilderHelperList)
         }
         return triggerBuilderHelperList
     }
 
+    /**
+     * It gets the next fire date based on the trigger list recieved
+     * @param triggers
+     * @return date
+     */
     def getNextExecutionDateFromTriggers(triggers){
         def nextDate = null
         def dates = []
@@ -4506,6 +4517,14 @@ class ScheduledExecutionService implements ApplicationContextAware, Initializing
         return nextDate
     }
 
+    /**
+     * It builds a trigger with the given parameters (used to build the cleanup job)
+     * @param jobName
+     * @param jobGroup
+     * @param cronExpression
+     * @param priority
+     * @return Trigger
+     */
     Trigger localCreateTrigger(String jobName, String jobGroup, String cronExpression, int priority = 5) {
         Trigger trigger
         try {
