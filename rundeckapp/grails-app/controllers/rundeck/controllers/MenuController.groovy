@@ -21,7 +21,6 @@ import com.dtolabs.rundeck.app.api.jobs.info.JobInfo
 import com.dtolabs.rundeck.app.api.jobs.info.JobInfoList
 import com.dtolabs.rundeck.app.support.AclFile
 import com.dtolabs.rundeck.app.support.BaseQuery
-import com.dtolabs.rundeck.app.support.ExecutionQuery
 import com.dtolabs.rundeck.app.support.ProjAclFile
 import com.dtolabs.rundeck.app.support.QueueQuery
 import com.dtolabs.rundeck.app.support.SaveProjAclFile
@@ -34,34 +33,16 @@ import com.dtolabs.rundeck.core.authorization.AuthContext
 import com.dtolabs.rundeck.core.authorization.AuthorizationUtil
 import com.dtolabs.rundeck.core.authorization.UserAndRolesAuthContext
 import com.dtolabs.rundeck.core.common.Framework
-import com.dtolabs.rundeck.core.common.IFramework
 import com.dtolabs.rundeck.core.common.IRundeckProject
-import com.dtolabs.rundeck.core.execution.service.FileCopier
-import com.dtolabs.rundeck.core.execution.service.NodeExecutor
-import com.dtolabs.rundeck.core.execution.workflow.steps.StepExecutor
-import com.dtolabs.rundeck.core.execution.workflow.steps.node.NodeStepExecutor
 import com.dtolabs.rundeck.core.extension.ApplicationExtension
-import com.dtolabs.rundeck.core.plugins.configuration.PropertyScope
-import com.dtolabs.rundeck.core.resources.ResourceModelSourceFactory
-import com.dtolabs.rundeck.core.resources.format.ResourceFormatGenerator
-import com.dtolabs.rundeck.core.resources.format.ResourceFormatParser
-import com.dtolabs.rundeck.plugins.file.FileUploadPlugin
-import com.dtolabs.rundeck.plugins.logging.LogFilterPlugin
-import com.dtolabs.rundeck.plugins.logs.ContentConverterPlugin
-import com.dtolabs.rundeck.plugins.orchestrator.OrchestratorPlugin
-import com.dtolabs.rundeck.plugins.option.OptionValuesPlugin
 import com.dtolabs.rundeck.plugins.scm.ScmPluginException
-import com.dtolabs.rundeck.plugins.step.NodeStepPlugin
-import com.dtolabs.rundeck.plugins.step.RemoteScriptNodeStepPlugin
-import com.dtolabs.rundeck.plugins.step.StepPlugin
-import com.dtolabs.rundeck.plugins.storage.StorageConverterPlugin
-import com.dtolabs.rundeck.plugins.storage.StoragePlugin
 import com.dtolabs.rundeck.server.plugins.services.StorageConverterPluginProviderService
 import com.dtolabs.rundeck.server.plugins.services.StoragePluginProviderService
 import grails.converters.JSON
 import groovy.transform.PackageScope
 import groovy.xml.MarkupBuilder
 import org.grails.plugins.metricsweb.MetricService
+import org.rundeck.app.components.RundeckJobDefinitionManager
 import org.rundeck.app.components.jobs.JobQuery
 import org.rundeck.app.components.jobs.JobQueryInput
 import org.rundeck.core.auth.AuthConstants
@@ -69,7 +50,6 @@ import org.rundeck.util.Sizes
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.web.multipart.MultipartHttpServletRequest
-import rundeck.AuthToken
 import rundeck.Execution
 import rundeck.LogFileStorageRequest
 import rundeck.Project
@@ -114,6 +94,7 @@ class MenuController extends ControllerBase implements ApplicationContextAware{
     PluginApiService pluginApiService
     MetricService metricService
     JobSchedulesService jobSchedulesService
+    RundeckJobDefinitionManager rundeckJobDefinitionManager
 
     def configurationService
     ScmService scmService
@@ -349,8 +330,7 @@ class MenuController extends ControllerBase implements ApplicationContextAware{
             xml{
                 response.setHeader(Constants.X_RUNDECK_RESULT_HEADER,"Jobs found: ${results.nextScheduled?.size()}")
                 def writer = new StringWriter()
-                def xml = new MarkupBuilder(writer)
-                JobsXMLCodec.encodeWithBuilder(results.nextScheduled,xml)
+                rundeckJobDefinitionManager.exportAs('xml',results.nextScheduled, writer)
                 writer.flush()
                 render(text:writer.toString(),contentType:"text/xml",encoding:"UTF-8")
             }
@@ -419,17 +399,24 @@ class MenuController extends ControllerBase implements ApplicationContextAware{
                         ]
                     }
 
-                    Date now = new Date()
-                    se?.executions?.findAll {Execution e ->
-                        return e.dateStarted > now && e.dateCompleted == null
-                    }?.each {Execution execution ->
-                        results.nextExecutions[se.id] = new Date(execution.dateStarted?.getTime())
-                    }
-
-                    if(results.nextExecutions?.get(se.id)){
+                    if(results.nextExecutions?.get(se.id) || results.nextOneTimeScheduledExecutions?.get(se.id)){
                         data.nextScheduledExecution=results.nextExecutions?.get(se.id)
+                        data.nextOneTimeScheduledExecutions=results.nextOneTimeScheduledExecutions?.get(se.id)
+
+                        if(!data.nextScheduledExecution ||
+                                (data.nextScheduledExecution &&
+                                        data.nextOneTimeScheduledExecutions &&
+                                        data.nextScheduledExecution > data.nextOneTimeScheduledExecutions)){
+                            data.nextScheduledExecution = data.nextOneTimeScheduledExecutions
+                        }
+
                         if (futureDate) {
-                            data.futureScheduledExecutions = scheduledExecutionService.nextExecutions(se,futureDate)
+                            data.futureScheduledExecutions = []
+                            if(data.nextOneTimeScheduledExecutions){
+                                data.futureScheduledExecutions += data.nextOneTimeScheduledExecutions
+                            }
+                            data.futureScheduledExecutions += scheduledExecutionService.nextExecutions(se,futureDate)
+
                             if (maxFutures
                                 && data.futureScheduledExecutions
                                 && data.futureScheduledExecutions.size() > maxFutures) {
@@ -672,6 +659,8 @@ class MenuController extends ControllerBase implements ApplicationContextAware{
 
         def allScheduled = schedlist.findAll { scheduledExecutionService.isScheduled(it) }
         def nextExecutions=scheduledExecutionService.nextExecutionTimes(allScheduled)
+        def nextOneTimeScheduledExecutions = query.runJobLaterFilter ? scheduledExecutionService.nextOneTimeScheduledExecutions(schedlist) : null
+
         def clusterMap=scheduledExecutionService.clusterScheduledJobs(allScheduled)
         log.debug("listWorkflows(nextSched): "+(System.currentTimeMillis()-rest));
         long preeval=System.currentTimeMillis()
@@ -762,6 +751,7 @@ class MenuController extends ControllerBase implements ApplicationContextAware{
         return [
         nextScheduled:schedlist,
         nextExecutions: nextExecutions,
+        nextOneTimeScheduledExecutions: nextOneTimeScheduledExecutions,
                 clusterMap: clusterMap,
         jobauthorizations:jobauthorizations,
         authMap:authorizemap,
@@ -3144,8 +3134,7 @@ class MenuController extends ControllerBase implements ApplicationContextAware{
         withFormat{
             xml{
                 def writer = new StringWriter()
-                def xml = new MarkupBuilder(writer)
-                JobsXMLCodec.encodeWithBuilder(results.nextScheduled,xml)
+                rundeckJobDefinitionManager.exportAs('xml',results.nextScheduled, writer)
                 writer.flush()
                 render(text:writer.toString(),contentType:"text/xml",encoding:"UTF-8")
             }
