@@ -147,7 +147,7 @@ class LocalJobSchedulesManager implements SchedulesManager {
         def triggerBuilderList = scheduledExecutionService.applyTriggerComponents(jobDetail , [triggerHelper])
         def dates = []
         triggerBuilderList?.each{ builder ->
-            def trigger = builder.build()
+            def trigger = builder.triggerBuilder.build()
             if(past){
                 dates << TriggerUtils.computeFireTimesBetween(trigger, trigger.getCalendarName(), to, new Date())
             }else {
@@ -171,7 +171,9 @@ class LocalJobSchedulesManager implements SchedulesManager {
         if(!se.scheduled){
             return new Date(TWO_HUNDRED_YEARS)
         }
-        if(!require && (!se.scheduleEnabled || !se.executionEnabled)){
+        if(!require && (!se.scheduleEnabled ||
+                !scheduledExecutionService.isProjectScheduledEnabled(se.project) ||
+                !scheduledExecutionService.isProjectExecutionEnabled(se.project))){
             return null
         }
         def triggerBuilder = createTriggerBuilder(se)
