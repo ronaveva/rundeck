@@ -93,7 +93,7 @@ class LocalJobSchedulesManager implements SchedulesManager {
         def trigger = createTriggerBuilder(se)
         jobDetail.getJobDataMap().put("bySchedule", true)
         Date nextTime
-        nextTime = scheduledExecutionService.registerOnQuartz(jobDetail, [trigger])
+        nextTime = scheduledExecutionService.registerOnQuartz(jobDetail, [trigger], false, se)
         return [nextTime: nextTime]
     }
 
