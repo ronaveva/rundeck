@@ -176,7 +176,7 @@ class LocalJobSchedulesManager implements SchedulesManager {
         }
         def triggerBuilder = createTriggerBuilder(se)
         def jobDetail = scheduledExecutionService.createJobDetail(se)
-        return scheduledExecutionService.registerOnQuartz(jobDetail, [triggerBuilder], true)
+        return scheduledExecutionService.registerOnQuartz(jobDetail, [triggerBuilder], true, se)
     }
 
     TriggerBuilderHelper createTriggerBuilderLocal(String jobName, String jobGroup, String cronExpression, int priority = 5) {
