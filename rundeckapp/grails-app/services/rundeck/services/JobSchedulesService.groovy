@@ -149,9 +149,9 @@ class LocalJobSchedulesManager implements SchedulesManager {
         triggerBuilderList?.each{ builder ->
             def trigger = builder.triggerBuilder.build()
             if(past){
-                dates << TriggerUtils.computeFireTimesBetween(trigger, trigger.getCalendarName(), to, new Date())
+                dates << TriggerUtils.computeFireTimesBetween(trigger, (trigger.getCalendarName()? quartzScheduler.getCalendar(trigger.getCalendarName()):null), to, new Date())
             }else {
-                dates << TriggerUtils.computeFireTimesBetween(trigger, trigger.getCalendarName(), new Date(), to)
+                dates << TriggerUtils.computeFireTimesBetween(trigger, (trigger.getCalendarName()? quartzScheduler.getCalendar(trigger.getCalendarName()):null), new Date(), to)
             }
             Collections.sort(dates)
         }
