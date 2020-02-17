@@ -27,6 +27,8 @@ import org.rundeck.app.components.jobs.ImportedJob
 import org.quartz.Trigger
 import org.rundeck.app.components.jobs.JobQuery
 import org.rundeck.app.components.jobs.JobQueryInput
+import org.rundeck.app.components.schedule.TriggerBuilderHelper
+import org.rundeck.app.components.schedule.TriggersExtender
 import org.rundeck.core.auth.AuthConstants
 import com.dtolabs.rundeck.core.plugins.PluginConfigSet
 import com.dtolabs.rundeck.core.plugins.SimplePluginConfiguration
@@ -34,6 +36,7 @@ import com.dtolabs.rundeck.core.plugins.ValidatedPlugin
 import com.dtolabs.rundeck.core.schedule.JobScheduleManager
 import com.dtolabs.rundeck.plugins.jobs.ExecutionLifecyclePlugin
 import org.apache.log4j.Logger
+import org.springframework.context.ConfigurableApplicationContext
 import rundeck.ScheduledExecutionStats
 
 import static org.junit.Assert.*
@@ -80,7 +83,6 @@ import spock.lang.Unroll
 class ScheduledExecutionServiceSpec extends Specification {
 
     public static final String TEST_UUID1 = 'BB27B7BB-4F13-44B7-B64B-D2435E2DD8C7'
-    public static final String TEST_UUID2 = '490966E0-2E2F-4505-823F-E2665ADC66FB'
 
     def setupSchedulerService(clusterEnabled = false){
         SchedulesManager rundeckJobSchedulesManager = new LocalJobSchedulesManager()
@@ -2724,6 +2726,9 @@ class ScheduledExecutionServiceSpec extends Specification {
         service.jobSchedulesService = Mock(JobSchedulesService){
             shouldScheduleExecution(_) >> upload.scheduled
         }
+        service.jobSchedulesService = Mock(JobSchedulesService){
+            shouldScheduleExecution(_) >> upload.scheduled
+        }
 
         when:
         def result = service.loadJobs([upload], 'update', null, [:], mockAuth())
@@ -3282,103 +3287,6 @@ class ScheduledExecutionServiceSpec extends Specification {
     }
     //TODO: move this to another test class
     /*@Unroll
-    def "nextExecutionTime on remote Cluster"() {
-        given:
-        setupSchedulerService(true)
-        setupDoValidate(true)
-        service.quartzScheduler = Mock(Scheduler)
-        service.quartzScheduler.getTrigger(_) >> null
-
-        def projectMock = Mock(IRundeckProject) {
-            getProjectProperties() >> ['project.disable.schedule':"false", 'project.disable.executions': "false"]
-        }
-
-        service.frameworkService = Mock(FrameworkService) {
-            getFrameworkProject(_) >> projectMock
-            isClusterModeEnabled() >> true
-        }
-
-        def job = new ScheduledExecution(
-                createJobParams(
-                        scheduled: hasSchedule,
-                        scheduleEnabled: scheduleEnabled,
-                        executionEnabled: executionEnabled,
-                        userRoleList: 'a,b',
-                        serverNodeUUID: TEST_UUID2
-                )
-        ).save()
-
-        service.jobSchedulesService = Mock(JobSchedulesService){
-            shouldScheduleExecution(_) >> upload.job.scheduled
-        }
-
-        when:
-        def result = service.nextExecutionTime(job)
-
-        then:
-        if(expectScheduled){
-            assertNotNull(result)
-        }else{
-            assertNull(result)
-        }
-
-
-        where:
-        scheduleEnabled | executionEnabled | hasSchedule | expectScheduled
-        true            | true             | true        | true
-        false           | true             | true        | false
-        true            | false            | true        | false
-        false           | false            | true        | false
-    }*/
-
-    //TODO: move this to another class
-    /*@Unroll
-    def "nextExecutionTime project scheduled/executions enable/disable"() {
-        given:
-        setupDoValidate(true)
-        service.quartzScheduler = Mock(Scheduler)
-        service.quartzScheduler.getTrigger(_) >> Mock(Trigger){
-            getNextFireTime() >> new Date()
-        }
-
-        def projectMock = Mock(IRundeckProject) {
-            getProjectProperties() >> ['project.disable.schedule':projectScheduledDisabled,
-                                       'project.disable.executions': projectExecutionsDisabled]
-        }
-
-        service.frameworkService = Mock(FrameworkService) {
-            getFrameworkProject(_) >> projectMock
-        }
-
-        def job = new ScheduledExecution(
-                createJobParams(
-                        scheduled: true,
-                        scheduleEnabled: true,
-                        executionEnabled: true,
-                        userRoleList: 'a,b'
-                )
-        ).save()
-
-        when:
-        def result = service.nextExecutionTime(job)
-
-        then:
-        if(expectScheduled){
-            assertNotNull(result)
-        }else{
-            assertNull(result)
-        }
-
-
-        where:
-        projectScheduledDisabled  | projectExecutionsDisabled   | expectScheduled
-        "false"                   | "false"                     | true
-        "true"                    | "false"                     | false
-        "false"                   | "true"                      | false
-        "true"                    | "true"                      | false
-    }*/
-
-    @Unroll
     def "do save job with dynamic threadcount"(){
         given:
         setupDoUpdate()
@@ -3758,6 +3666,9 @@ class ScheduledExecutionServiceSpec extends Specification {
         service.jobSchedulesService = Mock(JobSchedulesService){
             shouldScheduleExecution(_) >> upload.scheduled
         }
+        service.jobSchedulesService = Mock(JobSchedulesService){
+            shouldScheduleExecution(_) >> upload.scheduled
+        }
 
         when:
         def result = service.loadJobs([upload], 'update', null, [method: 'scm-import'], mockAuth())
@@ -3777,6 +3688,9 @@ class ScheduledExecutionServiceSpec extends Specification {
         def orig = new ScheduledExecution(createJobParams([:]) + [uuid: uuid]).save()
         def upload = new ScheduledExecution(createJobParams([description: 'milk duds']))
 
+        service.jobSchedulesService = Mock(JobSchedulesService){
+            shouldScheduleExecution(_) >> upload.scheduled
+        }
         service.jobSchedulesService = Mock(JobSchedulesService){
             shouldScheduleExecution(_) >> upload.scheduled
         }
@@ -4338,5 +4252,76 @@ class ScheduledExecutionServiceSpec extends Specification {
             [:]                                    | _
             [workflow: new Workflow()]             | _
             [workflow: new Workflow(commands: [])] | _
+    }
+    def "applyTriggerComponents"(){
+        given:
+        def job = new ScheduledExecution(
+                createJobParams(
+                        scheduled: true,
+                        scheduleEnabled: true,
+                        executionEnabled: true,
+                        userRoleList: 'a,b'
+                )
+        ).save()
+        service.applicationContext = Mock(ConfigurableApplicationContext){
+            getBeansOfType(_) >> ["componentName":new TriggersExtenderImpl(job)]
+        }
+        when:
+        def result = service.applyTriggerComponents(null, [])
+        then:
+        !result.isEmpty()
+
+    }
+
+    def "registerOnQuartz"(){
+        given:
+        def job = new ScheduledExecution(
+                createJobParams(
+                        scheduled: true,
+                        scheduleEnabled: true,
+                        executionEnabled: true,
+                        userRoleList: 'a,b'
+                )
+        ).save()
+        service.applicationContext = Mock(ConfigurableApplicationContext){
+            getBeansOfType(_) >> ["componentName":new TriggersExtenderImpl(job)]
+        }
+        when:
+        def result = service.registerOnQuartz(null, [], true, job)
+        then:
+        result
+
+    }
+
+}
+
+class TriggersExtenderImpl implements TriggersExtender {
+
+    def job
+
+    TriggersExtenderImpl(job) {
+        this.job = job
+    }
+
+    @Override
+    void extendTriggers(Object jobDetail, List<TriggerBuilderHelper> triggerBuilderHelpers) {
+        triggerBuilderHelpers << new TriggerBuilderHelper(){
+
+            LocalJobSchedulesManager schedulesManager = new LocalJobSchedulesManager()
+            @Override
+            Object getTriggerBuilder() {
+                schedulesManager.createTriggerBuilder(this.job).getTriggerBuilder()
+            }
+
+            @Override
+            Map getParams() {
+                return null
+            }
+
+            @Override
+            Object getTimeZone() {
+                return null
+            }
+        }
     }
 }
