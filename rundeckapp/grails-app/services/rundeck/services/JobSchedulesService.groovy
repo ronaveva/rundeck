@@ -1,11 +1,8 @@
 package rundeck.services
 
-import com.dtolabs.rundeck.core.plugins.configuration.ValidationException
 import com.dtolabs.rundeck.core.schedule.SchedulesManager
-import com.dtolabs.rundeck.plugins.jobs.JobOptionImpl
 import org.quartz.*
 import org.rundeck.app.components.schedule.TriggerBuilderHelper
-import org.rundeck.app.components.schedule.TriggersExtender
 import rundeck.ScheduledExecution
 
 class JobSchedulesService implements SchedulesManager {
@@ -149,9 +146,9 @@ class LocalJobSchedulesManager implements SchedulesManager {
         triggerBuilderList?.each{ builder ->
             def trigger = builder.triggerBuilder.build()
             if(past){
-                dates << TriggerUtils.computeFireTimesBetween(trigger, (trigger.getCalendarName()? quartzScheduler.getCalendar(trigger.getCalendarName()):null), to, new Date())
+                dates.addAll(TriggerUtils.computeFireTimesBetween(trigger, (trigger.getCalendarName()? quartzScheduler.getCalendar(trigger.getCalendarName()):null), to, new Date()))
             }else {
-                dates << TriggerUtils.computeFireTimesBetween(trigger, (trigger.getCalendarName()? quartzScheduler.getCalendar(trigger.getCalendarName()):null), new Date(), to)
+                dates.addAll(TriggerUtils.computeFireTimesBetween(trigger, (trigger.getCalendarName()? quartzScheduler.getCalendar(trigger.getCalendarName()):null), new Date(), to))
             }
             Collections.sort(dates)
         }
@@ -171,7 +168,9 @@ class LocalJobSchedulesManager implements SchedulesManager {
         if(!se.scheduled){
             return new Date(TWO_HUNDRED_YEARS)
         }
-        if(!require && (!se.scheduleEnabled || !se.executionEnabled)){
+        if(!require && (!se.scheduleEnabled ||
+                !scheduledExecutionService.isProjectScheduledEnabled(se.project) ||
+                !scheduledExecutionService.isProjectExecutionEnabled(se.project))){
             return null
         }
         def triggerBuilder = createTriggerBuilder(se)
