@@ -3,6 +3,9 @@
 # Check https://circleci.com/docs/2.0/language-java/ for more details
 #
 version: 2.1
+orbs:
+  node: circleci/node@1.1.6
+  trigger: rundeck/trigger-pipeline@0.0.5
 
 defaults: &defaults
   working_directory: ~/repo
