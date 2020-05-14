@@ -42,7 +42,7 @@ commands:
 jobs:
   build:
     <<: *defaults
-    # machine: true
+    machine: true
 
     steps:
       - checkout
