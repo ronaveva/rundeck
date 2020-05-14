@@ -49,11 +49,9 @@ jobs:
 
     steps:
       - checkout
-      # - node/install-node:
-      #     version: '8.13.0'
-      - restore-gradle-cache
       - node/install-node:
           version: '8.13.0'
+      - restore-gradle-cache
       - run:
           name: Build
           command: |
