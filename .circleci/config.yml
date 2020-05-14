@@ -52,7 +52,7 @@ jobs:
       - node/install-node:
           version: '8.13.0'
       - restore-gradle-cache
-      - run: ./gradlew --no-daemon check --stacktrace --info --parallel --build-cache
+      - run: ls
 
   test-gradle:
     <<: *defaults
