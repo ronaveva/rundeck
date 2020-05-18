@@ -21,10 +21,14 @@ commands:
       - run:
           name: Save test results
           command: |
-            mkdir -p ~/test-results/junit/
+            mkdir -p ~/test-results/junit/;
             find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/junit/ \;
             find . -type f -regex ".*/build/test-results/.*xml" | zip ~/test-results/junit/junit-results.zip -@;
-            curl -X POST "http://demo1.rundeck.la/digestor/report/unitTest/1/<<pipeline.number>>" -H  "accept: application/json" -H  "Content-Type: multipart/form-data" -F "deploy=true" -F "reportFile=@~/test-results/junit/junit-results.zip;type=application/x-zip-compressed";
+            ls -ltr ~/test-results/junit/;
+            mkdir -p build/junit-test-results;
+            find . -type f -regex ".*/build/test-results/.*xml" | zip build/junit-test-results/junit-results.zip -@;
+            ls -ltr build/junit-test-results/;
+            curl -X POST "http://demo1.rundeck.la/digestor/report/unitTest/1/<<pipeline.number>>" -H  "accept: application/json" -H  "Content-Type: multipart/form-data" -F "deploy=true" -F "reportFile=@build/junit-test-results/junit-results.zip;type=application/x-zip-compressed";
           when: always
       - store_test_results:
           path: ~/test-results
