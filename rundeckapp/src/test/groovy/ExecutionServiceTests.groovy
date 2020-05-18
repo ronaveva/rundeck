@@ -2493,7 +2493,7 @@ class ExecutionServiceTests  {
 
         def jobcontext = ExecutionService.exportContextForExecution(ex, lg.proxyInstance())
 
-        assertEquals(filterFixture, jobcontext.filter)
+        assertEquals(filterFixture, jobcontext.filterasdasd)
 
 //        lg.verify()
     }
